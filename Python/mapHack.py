@@ -2,25 +2,23 @@ import curses, traceback
 
 # For now we'll store some global variables here
 class gb:
-	windowHeight = 16
-	windowWidth = 32
+	windowHeight = 18
+	windowWidth = 36
 
 # # # # # # # # # # # # # CLASS DEFINITIONS # # # # # # # # # # # # # # # #
 
 #Character Class, for now we'll default the character class to the player.
 class character:
-	#Characters have names
-	name = "Player Name"
+	#The player has a name.
+	name = "Character Name"
 	#Hitpoints
 	maxHp = 10
-	currentHp = 10
+	currentHp = maxHp
 	#Magicpoints (or what have you)
 	maxMp = 10
-	currentMp = 10
-	#Experience Points
-	xp = 0
+	currentMp = maxMp
 	#A display symbol
-	symbol = '@'
+	symbol = 'M'
 	#A display color
 	color = curses.COLOR_RED
 	#positional coordinates
@@ -31,34 +29,54 @@ class character:
 	#paramaters: level we're initializing on, y position on that level,
 	#x position on that level, character name
 	#returns nothing
-	def __init__(self, level, yPos, xPos, name):
+	def __init__(self, level, yPos, xPos):
 		#When we initialize we update the level to let it know
 		#where we're putting the character
 		level.levelMap[yPos][xPos].character = self	
 		#update our personal coordinates
 		self.yPos = yPos
 		self.xPos = xPos
-		#initialize character name
-		self.name = name
+		self.level = level
 
 	#Our Move function moves our character on the level map.
 	#paramaters: direction (tuple indicating movement in the y and x directions),
 	#and map of the level we're on
 	#returns a brief message if movement isn't possible
-	def move(self, direction, levelMap):
+	def move(self, direction):
 		#if the destination we're attempting to move to is blocked, we can't move there.
-		if levelMap[self.yPos + direction[0]][self.xPos + direction[1]].terrain.passable:
+		if self.level.levelMap[self.yPos + direction[0]][self.xPos + direction[1]].terrain.passable:
 			#if it's not blocked we move to the destination square
 			#starting by clearing out the character from the tile we're currently on
-			levelMap[self.yPos][self.xPos].character = nullCharacter()
+			self.level.levelMap[self.yPos][self.xPos].character = nullCharacter()
 			#update our personal coordinates to the coordinates of our destination.
 			self.yPos += direction[0]
 			self.xPos += direction[1]
 			#update the destination tile to point to our character
-			levelMap[self.yPos][self.xPos].character = self
+			self.level.levelMap[self.yPos][self.xPos].character = self
 		else:
 			#if the destination square *is* blocked, we return a message
 			return "if statement failed"
+
+	def sightCheck():
+		for i in range(8):
+			print "lalafuckingla"
+
+
+
+
+class player (character):
+	#Experience Points
+	xp = 0
+	#The player symbol is '@'
+	symbol = '@'
+
+class spaceGoblin (character):
+	name = "Space Goblin"
+	maxHp = 5
+	currentHp = maxHp
+	maxMp = 0
+	currentMp = 0
+
 
 #the null character is just a temporary placeholder
 #for when a tile has no one in it
@@ -234,23 +252,23 @@ def drawMap(c, screen, levelMap, player):
 	#if our command is a directional key,
 	#we move our player
 	if c == 65 or chr(c) == 'w':
-		player.move([-1, 0], levelMap)
+		player.move([-1, 0])
 	if c == 66 or chr(c) == 's':
-		player.move([1, 0], levelMap)
+		player.move([1, 0])
 	if c == 67 or chr(c) == 'd':
-		player.move([0, 1], levelMap)
+		player.move([0, 1])
 	if c == 68 or chr(c) == 'a':
-		player.move([0, -1], levelMap)
+		player.move([0, -1])
 
 
 	#Draw a box around the map screen
 	drawBox(0, 0, gb.windowHeight, gb.windowWidth, screen)
 
 	#draw a box around our output zone
-	drawBox(gb.windowHeight + 1, 0, 6, gb.windowWidth, screen)
+	drawBox(gb.windowHeight + 1, 0, 4, gb.windowWidth, screen)
 
 	#draw our stats display:
-	statsWindow(0, gb.windowWidth + 1, gb.windowHeight, 25, screen)
+	statsWindow(0, gb.windowWidth + 1, gb.windowHeight, 23, screen)
 	
 	#this is the block of code where we draw the actual map itself
 	y = gb.windowHeight/2
@@ -305,9 +323,9 @@ try:
 		 "e e e e e e e e e # . # # # e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # # # e e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # . # # e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
-		 "e e e # . . # # # # . # # # # # # # e e e e e e # . # e e e e e e e e e e e e e e e/"
-		 "e e e # . # # . . . . . . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e/"
-		 "e e e # . # # . # # # # . # # # . # e e e e e e # . # e e e e e e e e e e e e e e e/"
+		 "e e e # . . # # # # . # # # # # # # # # # # # # # . # e e e e e e e e e e e e e e e/"
+		 "e e e # . # # . . . . . . . . . . . . . . . . . . . # e e e e e e e e e e e e e e e/"
+		 "e e e # . # # . # # # # . # # # . # # # # # # # # . # e e e e e e e e e e e e e e e/"
 		 "e e e # . # # . # e e # . # # # . # e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # . # # . # e e # . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # . . . . # # # # . # # # # # e e e e e e # . # e e e e e e e e e e e e e e e/"
@@ -319,7 +337,8 @@ try:
 	#initialize our level with the input string
 	levelOne = level(s)
 	#initialize our character at an occupiable point on our new map
-	player = character(levelOne, 9, 10, "FooBar")
+	player = player(levelOne, 9, 10)
+	player.name = "foobar"
 
 	#initialize our input character variable
 	c = 0
