@@ -25,18 +25,27 @@ class character:
 	xPos = 0
 	yPos = 0
 
+	power = 1
+
 	#Our initialization function
 	#paramaters: level we're initializing on, y position on that level,
 	#x position on that level, character name
 	#returns nothing
 	def __init__(self, level, yPos, xPos):
-		#When we initialize we update the level to let it know
-		#where we're putting the character
-		level.levelMap[yPos][xPos].character = self	
 		#update our personal coordinates
 		self.yPos = yPos
 		self.xPos = xPos
 		self.level = level
+
+	def attack(self, target):
+		target.currentHp -= self.power
+		if target.currentHp == 0:
+			target.die(self)
+
+	def die(self, killer):
+		self.level.levelMap[self.yPos][self.xPos].character = nullCharacter()
+		killer.xp += self.xpValue
+
 
 	#Our Move function moves our character on the level map.
 	#paramaters: direction (tuple indicating movement in the y and x directions),
@@ -44,15 +53,23 @@ class character:
 	#returns a brief message if movement isn't possible
 	def move(self, direction):
 		#if the destination we're attempting to move to is blocked, we can't move there.
-		if self.level.levelMap[self.yPos + direction[0]][self.xPos + direction[1]].terrain.passable:
+		targetYPos = self.yPos + direction[0]
+		targetXPos = self.xPos + direction[1]
+		levelMap = self.level.levelMap
+		target = levelMap[targetYPos][targetXPos]
+		if target.character.name != "null":
+			self.attack(target.character)
+			return "attacked target"
+
+		if target.terrain.passable:
 			#if it's not blocked we move to the destination square
 			#starting by clearing out the character from the tile we're currently on
-			self.level.levelMap[self.yPos][self.xPos].character = nullCharacter()
+			levelMap[self.yPos][self.xPos].character = nullCharacter()
 			#update our personal coordinates to the coordinates of our destination.
 			self.yPos += direction[0]
 			self.xPos += direction[1]
 			#update the destination tile to point to our character
-			self.level.levelMap[self.yPos][self.xPos].character = self
+			target.character = self
 		else:
 			#if the destination square *is* blocked, we return a message
 			return "if statement failed"
@@ -61,7 +78,9 @@ class character:
 	#currently working on the design for it before implementing it.
 	#def sightCheck():#
 
-
+#Our monster class is a collection of AI commands for npc's
+#class monster (character):
+	#def moveTowardsTarget(self, enemy):
 
 
 class player (character):
@@ -70,12 +89,13 @@ class player (character):
 	#The player symbol is '@'
 	symbol = '@'
 
-class spaceGoblin (monster):
+class spaceGoblin (character):
 	name = "Space Goblin"
 	maxHp = 5
 	currentHp = maxHp
 	maxMp = 0
 	currentMp = 0
+	xpValue = 1
 
 
 #the null character is just a temporary placeholder
@@ -83,6 +103,7 @@ class spaceGoblin (monster):
 class nullCharacter:
 	symbol = ''
 	color = 0
+	name = "null"
 
 #The terrainType class is going to be the parent class
 #for the different types of terrain that tiles can have
@@ -150,12 +171,14 @@ class level:
 	#a map of a level. Rows of the string are seperated by the /
 	#character, and individual spaces are seperated by whitespace
 	def __init__(self, mapString):
+		y = 0
 		#split our input string into rows,
 		#and then iterate across them
 		for row in mapString.split('/'):
 			#create an empty list to append spaces to
 			tileRow = []
 			#iterate across each row
+			x = 0
 			for space in row.split():
 				#identify which terrain type each character
 				#signifies, and add a tile of that type.
@@ -163,13 +186,20 @@ class level:
 					tileRow.append(tile(wall))
 				elif space == ".":
 					tileRow.append(tile(floor))
+				elif space == "g":
+					newTile = tile(floor)
+					newTile.character = spaceGoblin(self, y, x)
+					tileRow.append(newTile)
+
 				else:
 					#if the character is unrecognized,
 					#initialize an empty tile 
 					#(nothing in it, basic terrain type, which is impassable)
 					tileRow.append(tile(terrainType))
+				x += 1
 			#append the row to our levelMap
 			self.levelMap.append(tileRow)
+			y += 1
 
  # # # # # # # # # # # # # CURSES FUNCTIONS # # # # # # # # # # # # # # # #
 
@@ -316,15 +346,15 @@ try:
 		 "e e e # . . # # # # # # # # # # # # e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # . # # . . . . . . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # . # # . # # # # . # # # . # # # # # # # # . # # # # # # # # # # # # # # # #/"
-		 "e e e # . # # . # e e # . # # # . . . . . . . . . . . . . . . . . . . . . . . . . ./"
-		 "e e e # . # # . # e e # . . . . . # # # # # # # # . # # # # # # # # # # # # # # # #/"
+		 "e e e # . # # . # e e # . # # # . . . . . g . . . . . . . . . . . . . . . . . . . ./"
+		 "e e e # . # # . # e e # g . . . . # # # # # # # # . # # # # # # # # # # # # # # # #/"
 		 "e e e # . . . . # # # # . # # # # # e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # # # # # # # . . . # e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e e e e e e e # . # # # e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # # # e e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # . # # e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # . . # # # # . # # # # # # # # # # # # # # . # e e e e e e e e e e e e e e e/"
-		 "e e e # . # # . . . . . . . . . . . . . . . . . . . # e e e e e e e e e e e e e e e/"
+		 "e e e # . # # g . . . . . . . . . . . . . . . . . . # e e e e e e e e e e e e e e e/"
 		 "e e e # . # # . # # # # . # # # . # # # # # # # # . # e e e e e e e e e e e e e e e/"
 		 "e e e # . # # . # e e # . # # # . # e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # . # # . # e e # . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e/"
@@ -338,6 +368,7 @@ try:
 	levelOne = level(s)
 	#initialize our character at an occupiable point on our new map
 	player = player(levelOne, 9, 10)
+	levelOne.levelMap[9][10].character = player
 	player.name = "foobar"
 
 	#initialize our input character variable
