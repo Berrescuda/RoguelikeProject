@@ -79,8 +79,17 @@ class character:
 	#def sightCheck():#
 
 #Our monster class is a collection of AI commands for npc's
-#class monster (character):
-	#def moveTowardsTarget(self, enemy):
+class monster (character):
+
+	#This will be my attempted implementation of the pathfinding
+	#algorithm detailed at: 
+	#http://www.roguebasin.com/index.php?title=Quick_Pathfinding_in_a_Dungeon
+	#Find path should take a target tile,
+	#and return a list of directions to get to that tile
+	def findPath(self, target):
+		origin = self.level.levelMap[self.yPos][self.xPos]
+
+
 
 
 class player (character):
@@ -159,6 +168,7 @@ class tile:
 			#symbol and color provided by the terrain
 			return [self.terrain.symbol, self.terrain.color]
 
+
 #our level class represents a specific level of the dungeon.
 #generally it has a level number, and a map of the tiles on the level.
 class level:
@@ -200,6 +210,19 @@ class level:
 			#append the row to our levelMap
 			self.levelMap.append(tileRow)
 			y += 1
+
+	def listAdjacentTiles(self, y, x):
+		levelMap = self.levelMap
+		adjacentTiles = []
+		adjacentTiles.append(levelMap[y + 1][x])
+		adjacentTiles.append(levelMap[y + 1][x + 1])
+		adjacentTiles.append(levelMap[y][x + 1])
+		adjacentTiles.append(levelMap[y -1][x + 1])
+		adjacentTiles.append(levelMap[y - 1][x])
+		adjacentTiles.append(levelMap[y - 1][x - 1])
+		adjacentTiles.append(levelMap[y][x - 1])
+		adjacentTiles.append(levelMap[y + 1][x - 1])
+		return adjacentTiles
 
  # # # # # # # # # # # # # CURSES FUNCTIONS # # # # # # # # # # # # # # # #
 
