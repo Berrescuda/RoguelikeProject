@@ -4,6 +4,7 @@ import curses, traceback
 class gb:
 	windowHeight = 18
 	windowWidth = 36
+	debug = ''
 
 # # # # # # # # # # # # # CLASS DEFINITIONS # # # # # # # # # # # # # # # #
 
@@ -80,6 +81,7 @@ class character:
 
 #Our monster class is a collection of AI commands for npc's
 class monster (character):
+	path = []
 
 	#This will be my attempted implementation of the pathfinding
 	#algorithm detailed at: 
@@ -94,7 +96,7 @@ class monster (character):
 		unexploredTiles = []
 		directions = []
 
-		while(1):
+		while(currentTile != target):
 			adjTiles = currentTile.listAdjacentTiles(self.level.levelMap)
 			for tile in adjTiles:
 				if tile.terrain.passable:
@@ -103,23 +105,25 @@ class monster (character):
 								tile.pathValue = 1
 							else:
 								tile.pathValue = currentTile.pathValue + 1
-							if tile == target:
-								currentTile = tile
-								break
+							
 							unexploredTiles.append(tile)
-			currentTile = unexploredTiles.pop(0)
-
+							if tile == target:
+								break
+			if unexploredTiles:
+				currentTile = unexploredTiles.pop(0)
+			
 		while(1):
 			adjTiles = currentTile.listAdjacentTiles(self.level.levelMap)
 			for tile in adjTiles:
-				if tile.pathValue == currentTile.pathValue - 1:
-					y = tile.yPos - currentTile.yPos
-					x = tile.xPos - currentTile.xPos
+				if tile.pathValue == currentTile.pathValue - 1 or tile == origin:
+					y = currentTile.yPos - tile.yPos 
+					x = currentTile.xPos - tile.xPos
 					directions.append((y, x))
 					if tile == origin:
 						self.path = directions
-						break
+						return 1
 					currentTile = tile
+					break
 
 
 class player (character):
@@ -130,6 +134,7 @@ class player (character):
 
 class spaceGoblin (monster):
 	name = "Space Goblin"
+	symbol = 'g'
 	maxHp = 5
 	currentHp = maxHp
 	maxMp = 0
@@ -207,14 +212,30 @@ class tile:
 		y = self.yPos
 		x = self.xPos
 		adjacentTiles = []
-		adjacentTiles.append(levelMap[y + 1][x])		#Up
-		adjacentTiles.append(levelMap[y + 1][x + 1])	#UpRight
-		adjacentTiles.append(levelMap[y][x + 1])		#Right
-		adjacentTiles.append(levelMap[y -1][x + 1])		#DownRight
-		adjacentTiles.append(levelMap[y - 1][x])		#Down
-		adjacentTiles.append(levelMap[y - 1][x - 1])	#DownLeft
-		adjacentTiles.append(levelMap[y][x - 1])		#Left
-		adjacentTiles.append(levelMap[y + 1][x - 1])	#UpLeft
+		if y > 0:
+			adjacentTiles.append(levelMap[y - 1][x])		#Up
+
+		if y < len(levelMap) - 1:
+			adjacentTiles.append(levelMap[y + 1][x])		#Down
+
+		if x < len(levelMap[y]) - 1:
+			adjacentTiles.append(levelMap[y][x + 1])		#Right
+
+		if x > 0:
+			adjacentTiles.append(levelMap[y][x - 1])		#Left
+
+		if y < len(levelMap) - 1 and x < len(levelMap[y]) - 1:
+			adjacentTiles.append(levelMap[y + 1][x + 1])	#DownRight
+		
+		if y > 0 and x < len(levelMap[y]) - 1:
+			adjacentTiles.append(levelMap[y -1][x + 1])		#UpRight
+		
+		if y > 0 and x > 0:
+			adjacentTiles.append(levelMap[y - 1][x - 1])	#UpLeft
+
+		if y < len(levelMap) - 1 and x > 0:
+			adjacentTiles.append(levelMap[y + 1][x - 1])	#DownLeft
+
 		return adjacentTiles
 
 
@@ -342,18 +363,43 @@ def statsWindow(y, x, height, width, screen):
 def drawMap(c, screen, levelMap, player):
 	#clear the screen of any leftover residue
 	screen.clear()
-
+	passTurn = False
 	#if our command is a directional key,
 	#we move our player
-	if c == 65 or chr(c) == 'w':
+	if c == 65 or c == 56 or chr(c) == 'w':
 		player.move([-1, 0])
-	if c == 66 or chr(c) == 's':
-		player.move([1, 0])
-	if c == 67 or chr(c) == 'd':
-		player.move([0, 1])
-	if c == 68 or chr(c) == 'a':
-		player.move([0, -1])
+		passTurn = True
 
+	if c == 66 or c == 50 or chr(c) == 's':
+		player.move([1, 0])
+		passTurn = True
+
+	if c == 67 or c == 54 or chr(c) == 'd':
+		player.move([0, 1])
+		passTurn = True
+
+	if c == 68 or c == 52 or chr(c) == 'a':
+		player.move([0, -1])
+		passTurn = True
+
+	if c == 49:
+		player.move([+1, -1])
+		passTurn = True
+
+	if c == 51:
+		player.move([+1, 1])
+		passTurn = True
+
+	if c == 55:
+		player.move([-1, -1])
+		passTurn = True
+
+	if c == 57: 
+		player.move([-1, 1])
+		passTurn = True
+
+	if testGoblin.path and passTurn:
+		testGoblin.move(testGoblin.path.pop())
 
 	#Draw a box around the map screen
 	drawBox(0, 0, gb.windowHeight, gb.windowWidth, screen)
@@ -425,7 +471,7 @@ try:
 		 "e e e # . . . . # # # # . # # # # # e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # # # # # # # . . . # e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e e e e e e e # . # # # e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
-		 "e e e e e e e e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
+		 "e e e e e e e e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e"
 		)
 	
 	#initialize our level with the input string
@@ -436,12 +482,12 @@ try:
 	player.name = "foobar"
 	testGoblin = levelOne.levelMap[5][12].character
 	testGoblin.findPath(levelOne.levelMap[3][4])
+	testGoblin.path.append((0, 0))
 	#initialize our input character variable
 	c = 0
+
 	#while we don't recieve the quit character we keep executing the draw-getcharacter loop
 	while chr(c) != 'q':
-		if testGoblin.path:
-			testGoblin.move(testGoblin.path.pop())
 		#draw our map and handle relevant input
 		drawMap(c, mapScreen, levelOne.levelMap, player)
 		#wait for a new keystroke
@@ -456,3 +502,4 @@ except:
 	cursesCleanup()
 	#Provide a traceback
 	traceback.print_exc()
+	print gb.debug
