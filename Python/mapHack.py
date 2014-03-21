@@ -88,8 +88,38 @@ class monster (character):
 	#and return a list of directions to get to that tile
 	def findPath(self, target):
 		origin = self.level.levelMap[self.yPos][self.xPos]
+		origin.pathValue = -1
+		currentTile = origin
+		self.level.clearPathValues()
+		unexploredTiles = []
+		directions = []
 
+		while(1):
+			adjTiles = currentTile.listAdjacentTiles(self.level.levelMap)
+			for tile in adjTiles:
+				if tile.terrain.passable:
+						if tile.pathValue == 0:
+							if currentTile == origin:
+								tile.pathValue = 1
+							else:
+								tile.pathValue = currentTile.pathValue + 1
+							if tile == target:
+								currentTile = tile
+								break
+							unexploredTiles.append(tile)
+			currentTile = unexploredTiles.pop(0)
 
+		while(1):
+			adjTiles = currentTile.listAdjacentTiles(self.level.levelMap)
+			for tile in adjTiles:
+				if tile.pathValue == currentTile.pathValue - 1:
+					y = tile.yPos - currentTile.yPos
+					x = tile.xPos - currentTile.xPos
+					directions.append((y, x))
+					if tile == origin:
+						self.path = directions
+						break
+					currentTile = tile
 
 
 class player (character):
@@ -98,7 +128,7 @@ class player (character):
 	#The player symbol is '@'
 	symbol = '@'
 
-class spaceGoblin (character):
+class spaceGoblin (monster):
 	name = "Space Goblin"
 	maxHp = 5
 	currentHp = maxHp
@@ -146,10 +176,15 @@ class tile:
 	items = []
 	terrain = terrainType()
 
+	#This value will be manipulated by our pathfinding algorithm
+	pathValue = 0
+
 	#our initialization function takes a terrain type,
 	#when we initialize the tile we give it that type
-	def __init__(self, terrain):
+	def __init__(self, terrain, y, x):
 		self.terrain = terrain
+		self.yPos = y
+		self.xPos = x
 
 	#when we want to print our tile, generally we want to know what 
 	#its symbol is and what its color is.
@@ -167,6 +202,20 @@ class tile:
 			#if there's no character in the tile, we'll return the
 			#symbol and color provided by the terrain
 			return [self.terrain.symbol, self.terrain.color]
+
+	def listAdjacentTiles(self, levelMap):
+		y = self.yPos
+		x = self.xPos
+		adjacentTiles = []
+		adjacentTiles.append(levelMap[y + 1][x])		#Up
+		adjacentTiles.append(levelMap[y + 1][x + 1])	#UpRight
+		adjacentTiles.append(levelMap[y][x + 1])		#Right
+		adjacentTiles.append(levelMap[y -1][x + 1])		#DownRight
+		adjacentTiles.append(levelMap[y - 1][x])		#Down
+		adjacentTiles.append(levelMap[y - 1][x - 1])	#DownLeft
+		adjacentTiles.append(levelMap[y][x - 1])		#Left
+		adjacentTiles.append(levelMap[y + 1][x - 1])	#UpLeft
+		return adjacentTiles
 
 
 #our level class represents a specific level of the dungeon.
@@ -193,11 +242,11 @@ class level:
 				#identify which terrain type each character
 				#signifies, and add a tile of that type.
 				if space == "#":
-					tileRow.append(tile(wall))
+					tileRow.append(tile(wall, y, x))
 				elif space == ".":
-					tileRow.append(tile(floor))
+					tileRow.append(tile(floor, y, x))
 				elif space == "g":
-					newTile = tile(floor)
+					newTile = tile(floor, y, x)
 					newTile.character = spaceGoblin(self, y, x)
 					tileRow.append(newTile)
 
@@ -205,24 +254,16 @@ class level:
 					#if the character is unrecognized,
 					#initialize an empty tile 
 					#(nothing in it, basic terrain type, which is impassable)
-					tileRow.append(tile(terrainType))
+					tileRow.append(tile(terrainType, y, x))
 				x += 1
 			#append the row to our levelMap
 			self.levelMap.append(tileRow)
 			y += 1
 
-	def listAdjacentTiles(self, y, x):
-		levelMap = self.levelMap
-		adjacentTiles = []
-		adjacentTiles.append(levelMap[y + 1][x])
-		adjacentTiles.append(levelMap[y + 1][x + 1])
-		adjacentTiles.append(levelMap[y][x + 1])
-		adjacentTiles.append(levelMap[y -1][x + 1])
-		adjacentTiles.append(levelMap[y - 1][x])
-		adjacentTiles.append(levelMap[y - 1][x - 1])
-		adjacentTiles.append(levelMap[y][x - 1])
-		adjacentTiles.append(levelMap[y + 1][x - 1])
-		return adjacentTiles
+	def clearPathValues(self):
+		for row in self.levelMap:
+			for tile in row:
+				tile.pathValue = 0
 
  # # # # # # # # # # # # # CURSES FUNCTIONS # # # # # # # # # # # # # # # #
 
@@ -393,11 +434,14 @@ try:
 	player = player(levelOne, 9, 10)
 	levelOne.levelMap[9][10].character = player
 	player.name = "foobar"
-
+	testGoblin = levelOne.levelMap[5][12].character
+	testGoblin.findPath(levelOne.levelMap[3][4])
 	#initialize our input character variable
 	c = 0
 	#while we don't recieve the quit character we keep executing the draw-getcharacter loop
 	while chr(c) != 'q':
+		if testGoblin.path:
+			testGoblin.move(testGoblin.path.pop())
 		#draw our map and handle relevant input
 		drawMap(c, mapScreen, levelOne.levelMap, player)
 		#wait for a new keystroke
