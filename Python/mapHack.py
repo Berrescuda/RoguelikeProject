@@ -57,9 +57,9 @@ class character:
 			#if the destination square *is* blocked, we return a message
 			return "if statement failed"
 
-	def sightCheck():
-		for i in range(8):
-			print "lalafuckingla"
+	#this is much more complicated than I thought it would be,
+	#currently working on the design for it before implementing it.
+	#def sightCheck():#
 
 
 
@@ -70,7 +70,7 @@ class player (character):
 	#The player symbol is '@'
 	symbol = '@'
 
-class spaceGoblin (character):
+class spaceGoblin (monster):
 	name = "Space Goblin"
 	maxHp = 5
 	currentHp = maxHp
