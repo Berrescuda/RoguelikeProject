@@ -5,6 +5,7 @@ class gb:
 	windowHeight = 18
 	windowWidth = 36
 	debug = ''
+	debug2 = []
 
 # # # # # # # # # # # # # CLASS DEFINITIONS # # # # # # # # # # # # # # # #
 
@@ -73,7 +74,7 @@ class character:
 			target.character = self
 		else:
 			#if the destination square *is* blocked, we return a message
-			return "if statement failed"
+			return "path blocked"
 
 	#this is much more complicated than I thought it would be,
 	#currently working on the design for it before implementing it.
@@ -99,7 +100,7 @@ class monster (character):
 		while(currentTile != target):
 			adjTiles = currentTile.listAdjacentTiles(self.level.levelMap)
 			for tile in adjTiles:
-				if tile.terrain.passable:
+				if tile.terrain.passable and tile != origin:
 						if tile.pathValue == 0:
 							if currentTile == origin:
 								tile.pathValue = 1
@@ -108,22 +109,24 @@ class monster (character):
 							
 							unexploredTiles.append(tile)
 							if tile == target:
+								currentTile = tile
 								break
-			if unexploredTiles:
+			if unexploredTiles and currentTile != target:
 				currentTile = unexploredTiles.pop(0)
 			
 		while(1):
 			adjTiles = currentTile.listAdjacentTiles(self.level.levelMap)
 			for tile in adjTiles:
-				if tile.pathValue == currentTile.pathValue - 1 or tile == origin:
-					y = currentTile.yPos - tile.yPos 
-					x = currentTile.xPos - tile.xPos
-					directions.append((y, x))
-					if tile == origin:
-						self.path = directions
-						return 1
-					currentTile = tile
-					break
+				if tile.pathValue == currentTile.pathValue - 1:
+					if tile == origin or tile.pathValue > 0:
+						y = currentTile.yPos - tile.yPos 
+						x = currentTile.xPos - tile.xPos
+						directions.append((y, x))
+						if tile == origin:
+							self.path = directions
+							return 1
+						currentTile = tile
+						break
 
 
 class player (character):
@@ -398,8 +401,16 @@ def drawMap(c, screen, levelMap, player):
 		player.move([-1, 1])
 		passTurn = True
 
-	if testGoblin.path and passTurn:
-		testGoblin.move(testGoblin.path.pop())
+	if c == 53:
+		passTurn = True
+
+	if passTurn:
+		while testGoblin.path:
+			del testGoblin.path[0]
+		testGoblin.findPath(levelOne.levelMap[player.yPos][player.xPos])
+		direction = testGoblin.path.pop()
+		testGoblin.move(direction)
+		
 
 	#Draw a box around the map screen
 	drawBox(0, 0, gb.windowHeight, gb.windowWidth, screen)
@@ -457,8 +468,8 @@ try:
 		 "e e e # . # # . . . . . . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # . # # . # # # # . # # # . # # # # # # # # . # # # # # # # # # # # # # # # #/"
 		 "e e e # . # # . # e e # . # # # . . . . . g . . . . . . . . . . . . . . . . . . . ./"
-		 "e e e # . # # . # e e # g . . . . # # # # # # # # . # # # # # # # # # # # # # # # #/"
-		 "e e e # . . . . # # # # . # # # # # e e e e e e # . # e e e e e e e e e e e e e e e/"
+		 "e e e # . # # . # e e # . . . . . # # # # # # # # . # # # # # # # # # # # # # # # #/"
+		 "e e e # . . . . # # # # g # # # # # e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # # # # # # # . . . # e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e e e e e e e # . # # # e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # # # e e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
@@ -480,14 +491,15 @@ try:
 	player = player(levelOne, 9, 10)
 	levelOne.levelMap[9][10].character = player
 	player.name = "foobar"
-	testGoblin = levelOne.levelMap[5][12].character
-	testGoblin.findPath(levelOne.levelMap[3][4])
-	testGoblin.path.append((0, 0))
+	testGoblin = levelOne.levelMap[6][12].character
+	#testGoblin.findPath(levelOne.levelMap[3][4])
+	#testGoblin.path.append((0, 0))
 	#initialize our input character variable
 	c = 0
 
 	#while we don't recieve the quit character we keep executing the draw-getcharacter loop
 	while chr(c) != 'q':
+		
 		#draw our map and handle relevant input
 		drawMap(c, mapScreen, levelOne.levelMap, player)
 		#wait for a new keystroke
@@ -503,3 +515,4 @@ except:
 	#Provide a traceback
 	traceback.print_exc()
 	print gb.debug
+	print gb.debug2
