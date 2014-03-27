@@ -1,16 +1,16 @@
 import curses, traceback
 
 # For now we'll store some global variables here
-class gb:
+class Gb:
 	windowHeight = 18
 	windowWidth = 36
 	debug = []
-	dir = 0
+	traceback = True
 
 # # # # # # # # # # # # # CLASS DEFINITIONS # # # # # # # # # # # # # # # #
 
 #Character Class, for now we'll default the character class to the player.
-class character:
+class Character:
 	#The player has a name.
 	name = "Character Name"
 	#Hitpoints
@@ -29,6 +29,7 @@ class character:
 
 	power = 1
 	lineOfSight = []
+	inventory = []
 
 	#Our initialization function
 	#paramaters: level we're initializing on, y position on that level,
@@ -39,6 +40,7 @@ class character:
 		self.yPos = yPos
 		self.xPos = xPos
 		self.level = level
+		level.characters.append(self)
 
 	def attack(self, target):
 		target.currentHp -= self.power
@@ -46,8 +48,22 @@ class character:
 			target.die(self)
 
 	def die(self, killer):
-		self.level.levelMap[self.yPos][self.xPos].character = nullCharacter()
-		killer.xp += self.xpValue
+		self.level.levelMap[self.yPos][self.xPos].character = NullCharacter()
+		self.xPos = -1
+		self.yPos = -1
+		if killer == player:
+			killer.xp += self.xpValue
+		if self == player:
+			cursesCleanup()
+			print "sorry you were killed by a " + killer.name
+			Gb.traceback = False
+			exit(1)
+
+	def pickup(self):
+		currentTile = self.level.levelMap[self.yPos][self.xPos]
+		if currentTile.contents:
+			self.inventory.append(currentTile.contents[0])
+			del self.level.levelMap[self.yPos][self.xPos].contents[0]
 
 
 	#Our Move function moves our character on the level map.
@@ -67,7 +83,7 @@ class character:
 		if target.terrain.passable:
 			#if it's not blocked we move to the destination square
 			#starting by clearing out the character from the tile we're currently on
-			levelMap[self.yPos][self.xPos].character = nullCharacter()
+			levelMap[self.yPos][self.xPos].character = NullCharacter()
 			#update our personal coordinates to the coordinates of our destination.
 			self.yPos += direction[0]
 			self.xPos += direction[1]
@@ -109,7 +125,7 @@ class character:
 								break
 
 #Our monster class is a collection of AI commands for npc's
-class monster (character):
+class Monster (Character):
 	path = []
 
 	#This will be my attempted implementation of the pathfinding
@@ -168,13 +184,13 @@ class monster (character):
 		if self.path:
 			self.move(self.path.pop())
 
-class player (character):
+class Player (Character):
 	#Experience Points
 	xp = 0
 	#The player symbol is '@'
 	symbol = '@'
 
-class spaceGoblin (monster):
+class SpaceGoblin (Monster):
 	name = "Space Goblin"
 	symbol = 'g'
 	maxHp = 5
@@ -186,14 +202,16 @@ class spaceGoblin (monster):
 
 #the null character is just a temporary placeholder
 #for when a tile has no one in it
-class nullCharacter:
+class NullCharacter:
 	symbol = ''
 	color = 0
 	name = "null"
 
+
+# # # # # # # # # # # # # # # # # MAP OBJECT DEFINITIONS # # # # # # # # # # # # # #
 #The terrainType class is going to be the parent class
 #for the different types of terrain that tiles can have
-class terrainType:
+class TerrainType:
 	#terrain types have a symbol that identifies them on the map
 	symbol = ''
 	#terrain types are either passable or not passable by the character
@@ -202,13 +220,13 @@ class terrainType:
 	color = curses.COLOR_WHITE
 
 #Our floor class is going to be the primary type of terrain the player will travel on
-class floor (terrainType):
+class Floor (TerrainType):
 	symbol = '.'
 	#the player can walk on floors
 	passable = True
 
 #Our wall class is a type of terrain that will be placed next to floor tiles
-class wall (terrainType):
+class Wall (TerrainType):
 	symbol = '#'
 	#the player can't walk through walls
 	passable = False
@@ -216,13 +234,12 @@ class wall (terrainType):
 #The tile class represents a particular square on the map,
 #it can be occupied by characters and contain items,
 #it has a terrain type
-class tile:
+class Tile:
 	visible = False
 	#tiles start empty of characters
-	character = nullCharacter()
+	character = NullCharacter()
 	#tiles start empty of items
-	items = []
-	terrain = terrainType()
+	terrain = TerrainType()
 
 	#This value will be manipulated by our pathfinding algorithm
 	pathValue = 0
@@ -233,6 +250,7 @@ class tile:
 		self.terrain = terrain
 		self.yPos = y
 		self.xPos = x
+		self.contents = []
 
 	#when we want to print our tile, generally we want to know what 
 	#its symbol is and what its color is.
@@ -246,10 +264,12 @@ class tile:
 			#If there is a character in the tile, we return the 
 			#symbol and color provided by that character
 			return [self.character.symbol, self.character.color]
-		else:
+		elif self.contents:
+			return [self.contents[0].symbol, self.contents[0].color]
 			#if there's no character in the tile, we'll return the
 			#symbol and color provided by the terrain
-			return [self.terrain.symbol, self.terrain.color]
+		
+		return [self.terrain.symbol, self.terrain.color]
 
 	def listAdjacentTiles(self, levelMap):
 		y = self.yPos
@@ -284,11 +304,13 @@ class tile:
 
 #our level class represents a specific level of the dungeon.
 #generally it has a level number, and a map of the tiles on the level.
-class level:
+class Level:
 	#Our level map starts as an empty list
 	levelMap = []
 	#Our level number initializes at 0
 	levelNumber = 0
+
+	characters = []
 	
 	#Our intialization function takes a string that represents
 	#a map of a level. Rows of the string are seperated by the /
@@ -306,19 +328,23 @@ class level:
 				#identify which terrain type each character
 				#signifies, and add a tile of that type.
 				if space == "#":
-					tileRow.append(tile(wall, y, x))
+					tileRow.append(Tile(Wall, y, x))
 				elif space == ".":
-					tileRow.append(tile(floor, y, x))
+					tileRow.append(Tile(Floor, y, x))
 				elif space == "g":
-					newTile = tile(floor, y, x)
-					newTile.character = spaceGoblin(self, y, x)
+					newTile = Tile(Floor, y, x)
+					newTile.character = SpaceGoblin(self, y, x)
+					tileRow.append(newTile)
+				elif space == "%":
+					newTile = Tile(Floor, y, x)
+					newTile.contents.append(Potion())
 					tileRow.append(newTile)
 
 				else:
 					#if the character is unrecognized,
 					#initialize an empty tile 
 					#(nothing in it, basic terrain type, which is impassable)
-					tileRow.append(tile(terrainType, y, x))
+					tileRow.append(Tile(TerrainType, y, x))
 				x += 1
 			#append the row to our levelMap
 			self.levelMap.append(tileRow)
@@ -329,6 +355,21 @@ class level:
 			for tile in row:
 				tile.pathValue = 0
 				tile.visible = False
+
+# # # # # # # # # # # # # # # # ITEMS # # # # # # # # # # # # # # # # # # #
+
+class Item:
+	symbol = "%"
+	color = curses.COLOR_BLUE
+	name = "item"
+	
+class Potion(Item):
+	name = "potion"
+	def drink(character):
+		character.currentHp + 5
+		if character.currentHp > character.maxHp:
+			character.currentHp = character.maxHp
+		character.inventory.remove(self)
 
 
 # # # # # # # # # # # # # # GENERAL USE FUNCTIONS# # # # # # # # # # # # # #
@@ -405,7 +446,9 @@ def statsWindow(y, x, height, width, screen):
 	#print player XP
 	screen.addstr(y + 4, x, "XP:" + str(player.xp))
 
-	screen.addstr(y + 5, x, "dir:" + str(gb.dir))
+	screen.addstr(y + 5, x, "Inventory:")
+	for i in range(len(player.inventory)):
+		screen.addstr(y + 6 + i, x, player.inventory[i].name)
 
 #our drawMap function is where our primary in game curses calls take place
 #it takes a command character, and modifies the game accordingly (which in the future
@@ -452,33 +495,38 @@ def drawMap(c, screen, levelMap, player):
 
 	if c == 53:
 		passTurn = True
+
+	if chr(c) == 'g':
+		player.pickup()
 	
 	if passTurn:
-		testGoblin.takeTurn()
+		for character in levelOne.characters:
+			if character != player:
+				character.takeTurn()
 
 	player.getLineOfSight()
 		
 
 	#Draw a box around the map screen
-	drawBox(0, 0, gb.windowHeight, gb.windowWidth, screen)
+	drawBox(0, 0, Gb.windowHeight, Gb.windowWidth, screen)
 
 	#draw a box around our output zone
-	drawBox(gb.windowHeight + 1, 0, 4, gb.windowWidth, screen)
+	drawBox(Gb.windowHeight + 1, 0, 4, Gb.windowWidth, screen)
 
 	#draw our stats display:
-	statsWindow(0, gb.windowWidth + 1, gb.windowHeight, 23, screen)
+	statsWindow(0, Gb.windowWidth + 1, Gb.windowHeight, 23, screen)
 	
 	#this is the block of code where we draw the actual map itself
-	y = gb.windowHeight/2
+	y = Gb.windowHeight/2
 
 	for row in levelMap:
-		x = gb.windowWidth/4
-		if y - player.yPos > 0 and y - player.yPos < gb.windowHeight:
+		x = Gb.windowWidth/4
+		if y - player.yPos > 0 and y - player.yPos < Gb.windowHeight:
 			for square in row:
 				squareDisplay = square.printTile()
-				if square.visible:
+				if square.visible and square.character.symbol == '':
 					squareDisplay[1] = curses.COLOR_GREEN
-				if x - player.xPos > 0 and (x * 2) - (player.xPos * 2) < gb.windowWidth:
+				if x - player.xPos > 0 and (x * 2) - (player.xPos * 2) < Gb.windowWidth:
 					screen.addstr(y - player.yPos, (x * 2) - (player.xPos * 2), squareDisplay[0], curses.color_pair(squareDisplay[1]))
 					screen.addstr(y - player.yPos, x - player.xPos, '')
 				x += 1
@@ -518,7 +566,7 @@ try:
 		 "e e e # . # # . # # # # . # # # . # # # # # # # # . # # # # # # # # # # # # # # # #/"
 		 "e e e # . # # . # e e # . # # # . . . . . g . . . . . . . . . . . . . . . . . . . #/"
 		 "e e e # . # # . # e e # . . . . . # # # # # # # # . # # # # # # # # # # # # # # # #/"
-		 "e e e # . . . . # # # # . # # # # # e e e e e e # . # e e e e e e e e e e e e e e e/"
+		 "e e e # . . . . # # # # % # # # # # e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # # # # # # # . . . # e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e e e e e e e # . # # # e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # # # e e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
@@ -557,18 +605,17 @@ try:
 #		)
 	
 	#initialize our level with the input string
-	levelOne = level(s)
+	levelOne = Level(s)
 	#initialize our character at an occupiable point on our new map
-	player = player(levelOne, 9, 10)
+	player = Player(levelOne, 9, 10)
 	levelOne.levelMap[9][10].character = player
 	player.name = "foobar"
-	testGoblin = levelOne.levelMap[12][21].character
 	
 	#initialize our input character variable
 	c = 0
 
 	#while we don't recieve the quit character we keep executing the draw-getcharacter loop
-	while chr(c) != 'q':
+	while chr(c) != 'q' and player.currentHp > 0:
 		levelOne.clearTileValues()
 		#draw our map and handle relevant input
 		drawMap(c, mapScreen, levelOne.levelMap, player)
@@ -583,5 +630,7 @@ except:
 	#to it's original state or else it will be unusable.
 	cursesCleanup()
 	#Provide a traceback
-	traceback.print_exc()
-	print gb.debug
+	if Gb.traceback:
+		traceback.print_exc()
+	if Gb.debug:
+		print Gb.debug
