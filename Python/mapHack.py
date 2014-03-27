@@ -4,8 +4,8 @@ import curses, traceback
 class gb:
 	windowHeight = 18
 	windowWidth = 36
-	debug = ''
-	debug2 = []
+	debug = []
+	dir = 0
 
 # # # # # # # # # # # # # CLASS DEFINITIONS # # # # # # # # # # # # # # # #
 
@@ -28,6 +28,7 @@ class character:
 	yPos = 0
 
 	power = 1
+	lineOfSight = []
 
 	#Our initialization function
 	#paramaters: level we're initializing on, y position on that level,
@@ -76,9 +77,36 @@ class character:
 			#if the destination square *is* blocked, we return a message
 			return "path blocked"
 
-	#this is much more complicated than I thought it would be,
-	#currently working on the design for it before implementing it.
-	#def sightCheck():#
+	def getLineOfSight(self):
+		self.lineOfSight = []
+		n = 8
+		for direction in range (8):
+			for q in range (0, n + 1):
+				for p in range (0, q + 1):
+				 	for s in range (0, q + 1):
+						eps = s
+						y = 0
+						for x in range(1, n + 1):
+							eps += p
+							if (eps >= q):
+								eps -= q
+								if direction & 2:
+									y -= 1
+								else:
+									y += 1
+							if direction & 1:
+								x = -x
+
+							if direction &4:
+								tile = self.level.levelMap[x + self.yPos][y + self.xPos]
+							else: 
+								tile = self.level.levelMap[y + self.yPos][x + self.xPos]
+							
+							self.lineOfSight.append(tile)
+							if self == player:
+								tile.visible = True
+							if (tile.terrain.passable == False):
+								break
 
 #Our monster class is a collection of AI commands for npc's
 class monster (character):
@@ -93,7 +121,7 @@ class monster (character):
 		origin = self.level.levelMap[self.yPos][self.xPos]
 		origin.pathValue = -1
 		currentTile = origin
-		self.level.clearPathValues()
+		self.level.clearTileValues()
 		unexploredTiles = []
 		directions = []
 
@@ -127,7 +155,18 @@ class monster (character):
 							return 1
 						currentTile = tile
 						break
+	def canSeeHero(self):
+		playerTile = player.level.levelMap[player.yPos][player.xPos]
+		if playerTile in self.lineOfSight:
+			return True
+		return False
 
+	def takeTurn(self):
+		self.getLineOfSight()
+		if self.canSeeHero():
+			self.findPath(player.level.levelMap[player.yPos][player.xPos])
+		if self.path:
+			self.move(self.path.pop())
 
 class player (character):
 	#Experience Points
@@ -178,6 +217,7 @@ class wall (terrainType):
 #it can be occupied by characters and contain items,
 #it has a terrain type
 class tile:
+	visible = False
 	#tiles start empty of characters
 	character = nullCharacter()
 	#tiles start empty of items
@@ -284,12 +324,20 @@ class level:
 			self.levelMap.append(tileRow)
 			y += 1
 
-	def clearPathValues(self):
+	def clearTileValues(self):
 		for row in self.levelMap:
 			for tile in row:
 				tile.pathValue = 0
+				tile.visible = False
 
- # # # # # # # # # # # # # CURSES FUNCTIONS # # # # # # # # # # # # # # # #
+
+# # # # # # # # # # # # # # GENERAL USE FUNCTIONS# # # # # # # # # # # # # #
+
+def empty(listToEmpty):
+	while listToEmpty:
+		del listToEmpty[0]
+
+# # # # # # # # # # # # # # CURSES FUNCTIONS # # # # # # # # # # # # # # # #
 
 #This function is necessary for cleaning up the terminal once our program
 #is done running.
@@ -327,7 +375,6 @@ def hColoredLine(y, x, char, num, color, screen):
 	while i < num:
 		screen.addch(y, x + i, char, color)
 		i += 1
-
 # # # # # # # # # # # # # # IN GAME DISPLAY FUNCTIONS # # # # # # # # # # # #
 
 #Our statsWindow function displays basic character stats in a box of the size and at
@@ -357,6 +404,8 @@ def statsWindow(y, x, height, width, screen):
 	
 	#print player XP
 	screen.addstr(y + 4, x, "XP:" + str(player.xp))
+
+	screen.addstr(y + 5, x, "dir:" + str(gb.dir))
 
 #our drawMap function is where our primary in game curses calls take place
 #it takes a command character, and modifies the game accordingly (which in the future
@@ -403,13 +452,11 @@ def drawMap(c, screen, levelMap, player):
 
 	if c == 53:
 		passTurn = True
-
+	
 	if passTurn:
-		while testGoblin.path:
-			del testGoblin.path[0]
-		testGoblin.findPath(levelOne.levelMap[player.yPos][player.xPos])
-		direction = testGoblin.path.pop()
-		testGoblin.move(direction)
+		testGoblin.takeTurn()
+
+	player.getLineOfSight()
 		
 
 	#Draw a box around the map screen
@@ -429,6 +476,8 @@ def drawMap(c, screen, levelMap, player):
 		if y - player.yPos > 0 and y - player.yPos < gb.windowHeight:
 			for square in row:
 				squareDisplay = square.printTile()
+				if square.visible:
+					squareDisplay[1] = curses.COLOR_GREEN
 				if x - player.xPos > 0 and (x * 2) - (player.xPos * 2) < gb.windowWidth:
 					screen.addstr(y - player.yPos, (x * 2) - (player.xPos * 2), squareDisplay[0], curses.color_pair(squareDisplay[1]))
 					screen.addstr(y - player.yPos, x - player.xPos, '')
@@ -463,27 +512,49 @@ try:
 	
 
 	#Populate levelMap string
-	s = ("e e e # . # # e e e e e e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
+	s = ("e e e # # # # e e e e e e e e e e e e e e e e e # # # e e e e e e e e e e e e e e e/"
 		 "e e e # . . # # # # # # # # # # # # e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # . # # . . . . . . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # . # # . # # # # . # # # . # # # # # # # # . # # # # # # # # # # # # # # # #/"
-		 "e e e # . # # . # e e # . # # # . . . . . g . . . . . . . . . . . . . . . . . . . ./"
+		 "e e e # . # # . # e e # . # # # . . . . . g . . . . . . . . . . . . . . . . . . . #/"
 		 "e e e # . # # . # e e # . . . . . # # # # # # # # . # # # # # # # # # # # # # # # #/"
-		 "e e e # . . . . # # # # g # # # # # e e e e e e # . # e e e e e e e e e e e e e e e/"
+		 "e e e # . . . . # # # # . # # # # # e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # # # # # # # . . . # e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e e e e e e e # . # # # e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # # # e e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # . # # e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # . . # # # # . # # # # # # # # # # # # # # . # e e e e e e e e e e e e e e e/"
-		 "e e e # . # # g . . . . . . . . . . . . . . . . . . # e e e e e e e e e e e e e e e/"
+		 "e e e # . # # g . . . . . . . . . . . . . g . . . . # e e e e e e e e e e e e e e e/"
 		 "e e e # . # # . # # # # . # # # . # # # # # # # # . # e e e e e e e e e e e e e e e/"
 		 "e e e # . # # . # e e # . # # # . # e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # . # # . # e e # . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # . . . . # # # # . # # # # # e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e # # # # # # # . . . # e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
 		 "e e e e e e e e e # . # # # e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
-		 "e e e e e e e e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e"
+		 "e e e e e e e e e # # # e e e e e e e e e e e e # # # e e e e e e e e e e e e e e e"
 		)
+
+#	s = (". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . #/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . #/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . #/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e"
+#		)
 	
 	#initialize our level with the input string
 	levelOne = level(s)
@@ -491,15 +562,14 @@ try:
 	player = player(levelOne, 9, 10)
 	levelOne.levelMap[9][10].character = player
 	player.name = "foobar"
-	testGoblin = levelOne.levelMap[6][12].character
-	#testGoblin.findPath(levelOne.levelMap[3][4])
-	#testGoblin.path.append((0, 0))
+	testGoblin = levelOne.levelMap[12][21].character
+	
 	#initialize our input character variable
 	c = 0
 
 	#while we don't recieve the quit character we keep executing the draw-getcharacter loop
 	while chr(c) != 'q':
-		
+		levelOne.clearTileValues()
 		#draw our map and handle relevant input
 		drawMap(c, mapScreen, levelOne.levelMap, player)
 		#wait for a new keystroke
@@ -515,4 +585,3 @@ except:
 	#Provide a traceback
 	traceback.print_exc()
 	print gb.debug
-	print gb.debug2
