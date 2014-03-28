@@ -1,4 +1,5 @@
 import curses, traceback
+import levelGenerator
 
 # For now we'll store some global variables here
 class Gb:
@@ -41,6 +42,7 @@ class Character:
 		self.xPos = xPos
 		self.level = level
 		level.characters.append(self)
+		level.levelMap[yPos][xPos].character = self
 
 	def attack(self, target):
 		target.currentHp -= self.power
@@ -53,6 +55,7 @@ class Character:
 		self.xPos = -1
 		self.yPos = -1
 		log(killer.name +" killed a " +self.name)
+		self.level.characters.remove(self)
 		if killer == player:
 			killer.xp += self.xpValue
 		if self == player:
@@ -319,6 +322,7 @@ class Level:
 	#character, and individual spaces are seperated by whitespace
 	def __init__(self, mapString):
 		y = 0
+		characters = []
 		#split our input string into rows,
 		#and then iterate across them
 		for row in mapString.split('/'):
@@ -334,9 +338,11 @@ class Level:
 				elif space == ".":
 					tileRow.append(Tile(Floor, y, x))
 				elif space == "g":
-					newTile = Tile(Floor, y, x)
-					newTile.character = SpaceGoblin(self, y, x)
-					tileRow.append(newTile)
+					characters.append(["SpaceGoblin", self, y, x])
+					tileRow.append(Tile(Floor, y, x))
+				elif space == "@":
+					characters.append(["Player", self, y, x])
+					tileRow.append(Tile(Floor, y, x))
 				elif space == "%":
 					newTile = Tile(Floor, y, x)
 					newTile.contents.append(Potion())
@@ -351,6 +357,12 @@ class Level:
 			#append the row to our levelMap
 			self.levelMap.append(tileRow)
 			y += 1
+			while characters:
+				newChar = characters.pop()
+				if newChar[0] == "SpaceGoblin":
+					SpaceGoblin(newChar[1], newChar[2], newChar[3])
+				elif newChar[0] == "Player":
+					Player(newChar[1], newChar[2], newChar[3])
 
 	def clearTileValues(self):
 		for row in self.levelMap:
@@ -573,27 +585,28 @@ try:
 	
 
 	#Populate levelMap string
-	s = ("e e e # # # # e e e e e e e e e e e e e e e e e # # # e e e e e e e e e e e e e e e/"
-		 "e e e # . . # # # # # # # # # # # # e e e e e e # . # e e e e e e e e e e e e e e e/"
-		 "e e e # . # # . . . . . . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e/"
-		 "e e e # . # # . # # # # . # # # . # # # # # # # # . # # # # # # # # # # # # # # # #/"
-		 "e e e # . # # . # e e # . # # # . . . . . g . . . . . . . . . . . . . . . . . . . #/"
-		 "e e e # . # # . # e e # . . . . . # # # # # # # # . # # # # # # # # # # # # # # # #/"
-		 "e e e # . . . . # # # # % # # # # # e e e e e e # . # e e e e e e e e e e e e e e e/"
-		 "e e e # # # # # # # . . . # e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
-		 "e e e e e e e e e # . # # # e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
-		 "e e e # # # e e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
-		 "e e e # . # # e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
-		 "e e e # . . # # # # . # # # # # # # # # # # # # # . # e e e e e e e e e e e e e e e/"
-		 "e e e # . # # g . . . . . . . . . . . . . g . . . . # e e e e e e e e e e e e e e e/"
-		 "e e e # . # # . # # # # . # # # . # # # # # # # # . # e e e e e e e e e e e e e e e/"
-		 "e e e # . # # . # e e # . # # # . # e e e e e e # . # e e e e e e e e e e e e e e e/"
-		 "e e e # . # # . # e e # . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e/"
-		 "e e e # . . . . # # # # . # # # # # e e e e e e # . # e e e e e e e e e e e e e e e/"
-		 "e e e # # # # # # # . . . # e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
-		 "e e e e e e e e e # . # # # e e e e e e e e e e # . # e e e e e e e e e e e e e e e/"
-		 "e e e e e e e e e # # # e e e e e e e e e e e e # # # e e e e e e e e e e e e e e e"
-		)
+	s = levelGenerator.generateLevel(Gb.windowHeight, Gb.windowWidth)
+#	s = ("e e e # # # # e e e e e e e e e e e e e e e e e # # # e e e e e e e e e e e e e e e /"
+#		 "e e e # . . # # # # # # # # # # # # e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # . # # . . . . . . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # . # # . # # # # . # # # . # # # # # # # # . # # # # # # # # # # # # # # # # /"
+#		 "e e e # . # # . # e e # . # # # . . . . . g . . . . . . . . . . . . . . . . . . . # /"
+#		 "e e e # . # # . # e e # . . . . . # # # # # # # # . # # # # # # # # # # # # # # # # /"
+#		 "e e e # . . . . # # # # % # # # # # e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # # # # # # # . . . # e e e e e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e e e e e e e # . # # # e e e e e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # # # e e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # . # # e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # . . # # # # . # # # # # # # # # # # # # # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # . # # g . . . . . . . . . . . . . g . . . . # e e e e e e e e e e e e e e e /"
+#		 "e e e # . # # . # # # # . # # # . # # # # # # # # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # . # # . # e e # . # # # . # e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # . # # . # e e # . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # . . . . # # # # . # # # # # e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # # # # # # # . . . # e e e e e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e e e e e e e # . # # # e e e e e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e e e e e e e # # # e e e e e e e e e e e e # # # e e e e e e e e e e e e e e e"
+#		)
 
 #	s = (". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
 #		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
@@ -621,8 +634,10 @@ try:
 	logRecord = ["Hello", "Welcome to", "RoguelikeThing"]
 	levelOne = Level(s)
 	#initialize our character at an occupiable point on our new map
-	player = Player(levelOne, 9, 10)
-	levelOne.levelMap[9][10].character = player
+	for character in levelOne.characters:
+		if character.symbol == '@':
+			player = character
+	
 	player.name = "foobar"
 	
 	#initialize our input character variable
