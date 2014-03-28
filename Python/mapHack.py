@@ -15,7 +15,7 @@ class Character:
 	name = "Character Name"
 	#Hitpoints
 	maxHp = 10
-	currentHp = maxHp
+	currentHp = 10
 	#Magicpoints (or what have you)
 	maxMp = 10
 	currentMp = maxMp
@@ -44,6 +44,7 @@ class Character:
 
 	def attack(self, target):
 		target.currentHp -= self.power
+		log(self.name +" attacks " + target.name)
 		if target.currentHp == 0:
 			target.die(self)
 
@@ -51,6 +52,7 @@ class Character:
 		self.level.levelMap[self.yPos][self.xPos].character = NullCharacter()
 		self.xPos = -1
 		self.yPos = -1
+		log(killer.name +" killed a " +self.name)
 		if killer == player:
 			killer.xp += self.xpValue
 		if self == player:
@@ -365,8 +367,8 @@ class Item:
 	
 class Potion(Item):
 	name = "potion"
-	def drink(character):
-		character.currentHp + 5
+	def drink(self, character):
+		character.currentHp += 5
 		if character.currentHp > character.maxHp:
 			character.currentHp = character.maxHp
 		character.inventory.remove(self)
@@ -377,6 +379,8 @@ class Potion(Item):
 def empty(listToEmpty):
 	while listToEmpty:
 		del listToEmpty[0]
+def log(message):
+	logRecord.append(message)
 
 # # # # # # # # # # # # # # CURSES FUNCTIONS # # # # # # # # # # # # # # # #
 
@@ -498,6 +502,11 @@ def drawMap(c, screen, levelMap, player):
 
 	if chr(c) == 'g':
 		player.pickup()
+
+	if chr(c) == 'u':
+		if player.inventory:
+			player.inventory[0].drink(player)
+			passTurn = True
 	
 	if passTurn:
 		for character in levelOne.characters:
@@ -512,6 +521,10 @@ def drawMap(c, screen, levelMap, player):
 
 	#draw a box around our output zone
 	drawBox(Gb.windowHeight + 1, 0, 4, Gb.windowWidth, screen)
+	if logRecord:
+		screen.addstr(Gb.windowHeight +4, 1, logRecord[len(logRecord)-1])
+		screen.addstr(Gb.windowHeight +3, 1, logRecord[len(logRecord) -2])
+		screen.addstr(Gb.windowHeight +2, 1, logRecord[len(logRecord)-3] )
 
 	#draw our stats display:
 	statsWindow(0, Gb.windowWidth + 1, Gb.windowHeight, 23, screen)
@@ -605,6 +618,7 @@ try:
 #		)
 	
 	#initialize our level with the input string
+	logRecord = ["Hello", "Welcome to", "RoguelikeThing"]
 	levelOne = Level(s)
 	#initialize our character at an occupiable point on our new map
 	player = Player(levelOne, 9, 10)
