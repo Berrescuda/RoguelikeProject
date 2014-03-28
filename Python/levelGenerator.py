@@ -1,6 +1,9 @@
 from random import randint
 import traceback
 
+class gb:
+	debug = ''
+
 class Room:
 	width = 0
 	height = 0
@@ -50,7 +53,7 @@ class Room:
 				goSouth(corridor, room, levelMap)	
 
 			if xDirection == 'west':
-					goWest(corridor, room, levelMap)
+				goWest(corridor, room, levelMap)
 			else: 
 				goEast(corridor, room, levelMap)
 
@@ -64,7 +67,7 @@ class Room:
 				goEast(corridor, room, levelMap)	
 
 			if yDirection == 'north':
-					goNorth(corridor, room, levelMap)
+				goNorth(corridor, room, levelMap)
 			else: 
 				goSouth(corridor, room, levelMap)
 		self.connected = True
@@ -121,25 +124,53 @@ def coinFlip():
 		return False
 
 def goNorth(corridor, target, levelMap):
+	debug = corridor
 	while corridor[0] > (target.yPos + target.height - 1):
-		levelMap[corridor[0]][corridor[1]] = '.'
-		corridor[0] -= 1
+		if corridor[0] < len(levelMap) -1 and corridor[0] > 0:
+			if corridor[0] < len(levelMap[corridor[0]]) - 1 and corridor[1] > 0:
+				levelMap[corridor[0]][corridor[1]] = '.'
+				corridor[0] -= 1
+			else: 
+				break
+		else: 
+			break
 
 def goSouth(corridor, target, levelMap):
+	gb.debug = corridor
 	while corridor[0] < (target.yPos + 1):
-		debug = corridor
-		levelMap[corridor[0]][corridor[1]] = '.'
-		corridor[0] += 1
+		if corridor[0] < len(levelMap) -1 and corridor[0] > 0:
+			if corridor[0] < len(levelMap[corridor[0]]) - 1 and corridor[1] > 0:
+				levelMap[corridor[0]][corridor[1]] = '.'
+				corridor[0] += 1
+			else: 
+				break
+		else: 
+			break
 
 def goEast(corridor, target, levelMap):
+	gb.debug = corridor
 	while corridor[1] < (target.xPos + 1):
-			levelMap[corridor[0]][corridor[1]] = '.'
-			corridor[1] += 1
+		if corridor[0] < len(levelMap) -1 and corridor[0] > 0:
+			if corridor[0] < len(levelMap[corridor[0]]) - 1 and corridor[1] > 0:
+				levelMap[corridor[0]][corridor[1]] = '.'
+				corridor[1] += 1
+			else: 
+				break
+		else: 
+			break
 
 def goWest(corridor, target, levelMap):
+	gb.debug = corridor
 	while corridor[1] > (target.xPos + target.width - 1):
-		levelMap[corridor[0]][corridor[1]] = '.'
-		corridor[1] -= 1
+		if corridor[0] < len(levelMap) -1 and corridor[0] > 0:
+			if corridor[0] < len(levelMap[corridor[0]]) - 1 and corridor[1] > 0:
+				levelMap[corridor[0]][corridor[1]] = '.'
+				corridor[1] -= 1
+			else: 
+				break
+
+		else: 
+			break
 
 def levelMapToString(levelMap):
 	mapString = ''
@@ -161,7 +192,7 @@ def addWalls(levelMap):
 			x += 1
 		y += 1
 
-def generateLevel(mapWidth, mapHeight):
+def generateLevel(mapWidth, mapHeight, start):
 	levelMap = []
 	unconnectedRooms = []
 	connectedRooms = []
@@ -186,17 +217,21 @@ def generateLevel(mapWidth, mapHeight):
 		connectedRooms.append(room)
 
 	addWalls(levelMap)
-	connectedRooms[0].placeInRoom("@", levelMap)
+	
+	if start:
+		connectedRooms[0].placeInRoom("@", levelMap)
+	connectedRooms[randint(0, len(connectedRooms)) - 1].placeInRoom("<", levelMap)
+	connectedRooms[randint(0, len(connectedRooms)) - 1].placeInRoom(">", levelMap)
 	for room in connectedRooms:
 		if coinFlip():
-			room.placeInRoom("g", levelMap)
+			if coinFlip():
+				room.placeInRoom("g", levelMap)
 
 	return levelMapToString(levelMap)
 
 try:
-	debug = []
-	generateLevel(16, 32)
-	print debug
+	generateLevel(18, 36, True)
 except:
+	print "debug is " + str(gb.debug)
 	traceback.print_exc()
-	print debug
+	

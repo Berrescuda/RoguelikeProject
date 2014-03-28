@@ -236,6 +236,14 @@ class Wall (TerrainType):
 	#the player can't walk through walls
 	passable = False
 
+class UpStairs (TerrainType):
+	symbol = '<'
+	passable = True
+
+class DownStairs (TerrainType):
+	symbol = '>'
+	passable = True
+
 #The tile class represents a particular square on the map,
 #it can be occupied by characters and contain items,
 #it has a terrain type
@@ -311,18 +319,19 @@ class Tile:
 #generally it has a level number, and a map of the tiles on the level.
 class Level:
 	#Our level map starts as an empty list
-	levelMap = []
+	
 	#Our level number initializes at 0
 	levelNumber = 0
-
-	characters = []
 	
 	#Our intialization function takes a string that represents
 	#a map of a level. Rows of the string are seperated by the /
 	#character, and individual spaces are seperated by whitespace
 	def __init__(self, mapString):
+		self.levelMap = []
 		y = 0
+		self.characters = []
 		characters = []
+
 		#split our input string into rows,
 		#and then iterate across them
 		for row in mapString.split('/'):
@@ -337,6 +346,14 @@ class Level:
 					tileRow.append(Tile(Wall, y, x))
 				elif space == ".":
 					tileRow.append(Tile(Floor, y, x))
+
+				elif space == "<":
+					tileRow.append(Tile(UpStairs, y, x))
+					self.UpCoordinates = [y, x]
+				elif space == ">":
+					tileRow.append(Tile(DownStairs, y, x))
+					self.DownCoordinates = [x, y]
+
 				elif space == "g":
 					characters.append(["SpaceGoblin", self, y, x])
 					tileRow.append(Tile(Floor, y, x))
@@ -347,6 +364,7 @@ class Level:
 					newTile = Tile(Floor, y, x)
 					newTile.contents.append(Potion())
 					tileRow.append(newTile)
+
 
 				else:
 					#if the character is unrecognized,
@@ -462,16 +480,18 @@ def statsWindow(y, x, height, width, screen):
 	#print player XP
 	screen.addstr(y + 4, x, "XP:" + str(player.xp))
 
-	screen.addstr(y + 5, x, "Inventory:")
+	screen.addstr(y + 5, x, "Current Level: " + str(player.currentLevel))
+
+	screen.addstr(y + 6, x, "Inventory:")
 	for i in range(len(player.inventory)):
-		screen.addstr(y + 6 + i, x, player.inventory[i].name)
+		screen.addstr(y + 7 + i, x, player.inventory[i].name)
 
 #our drawMap function is where our primary in game curses calls take place
 #it takes a command character, and modifies the game accordingly (which in the future
 #should probably be moved out of the draw loop) it then draws the level map it is given
 #based on the position of the player
 #paramaters: input character, screen to draw on, levelmap to draw, the player object
-def drawMap(c, screen, levelMap, player):
+def drawMap(c, screen, player, level):
 	#clear the screen of any leftover residue
 	screen.clear()
 	passTurn = False
@@ -520,9 +540,42 @@ def drawMap(c, screen, levelMap, player):
 			player.inventory[0].drink(player)
 			passTurn = True
 	
+	if chr(c) == '<':
+		if level.levelMap[player.yPos][player.xPos].terrain.symbol == '<':
+			level.characters.remove(player)
+			level.levelMap[player.yPos][player.xPos].character = NullCharacter()
+			
+			player.currentLevel -= 1
+			player.level = dungeon[player.currentLevel]
+			level = player.level
+			level.characters.append(player)
+			
+			Gb.debug = player.level.DownCoordinates
+			player.yPos = level.DownCoordinates[0]
+			player.xPos = level.DownCoordinates[1]
+			level.levelMap[player.yPos][player.xPos].character = player
+		else :
+			log("Sorry, you can't go up here")
+	if chr(c) == '>':
+		if level.levelMap[player.yPos][player.xPos].terrain.symbol == '>':
+			level.characters.remove(player)
+			level.levelMap[player.yPos][player.xPos].character = NullCharacter()
+
+			player.currentLevel += 1
+			player.level = dungeon[player.currentLevel]
+			level = player.level
+			level.characters.append(player)
+			player.yPos = level.UpCoordinates[0]
+			player.xPos = level.UpCoordinates[1]
+			level.levelMap[player.yPos][player.xPos].character = player
+		else :
+			log("Sorry, you can't go down here")
+
+	levelMap = level.levelMap
+
 	if passTurn:
-		for character in levelOne.characters:
-			if character != player:
+		for character in level.characters:
+			if character.symbol != '@':
 				character.takeTurn()
 
 	player.getLineOfSight()
@@ -585,20 +638,19 @@ try:
 	
 
 	#Populate levelMap string
-	s = levelGenerator.generateLevel(Gb.windowHeight, Gb.windowWidth)
-#	s = ("e e e # # # # e e e e e e e e e e e e e e e e e # # # e e e e e e e e e e e e e e e /"
+#	s2 = ("e e e # # # # e e e e e e e e e e e e e e e e e # # # e e e e e e e e e e e e e e e /"
 #		 "e e e # . . # # # # # # # # # # # # e e e e e e # . # e e e e e e e e e e e e e e e /"
 #		 "e e e # . # # . . . . . . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e /"
 #		 "e e e # . # # . # # # # . # # # . # # # # # # # # . # # # # # # # # # # # # # # # # /"
-#		 "e e e # . # # . # e e # . # # # . . . . . g . . . . . . . . . . . . . . . . . . . # /"
+#		 "e e e # . # # . # e e # . # # # . . . . . . . . . . . . . . . . . . . . . . . . . # /"
 #		 "e e e # . # # . # e e # . . . . . # # # # # # # # . # # # # # # # # # # # # # # # # /"
-#		 "e e e # . . . . # # # # % # # # # # e e e e e e # . # e e e e e e e e e e e e e e e /"
-#		 "e e e # # # # # # # . . . # e e e e e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # . . > . # # # # % # # # # # e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # # # # # # # @ . . # e e e e e e e e e e # . # e e e e e e e e e e e e e e e /"
 #		 "e e e e e e e e e # . # # # e e e e e e e e e e # . # e e e e e e e e e e e e e e e /"
 #		 "e e e # # # e e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e /"
 #		 "e e e # . # # e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e /"
 #		 "e e e # . . # # # # . # # # # # # # # # # # # # # . # e e e e e e e e e e e e e e e /"
-#		 "e e e # . # # g . . . . . . . . . . . . . g . . . . # e e e e e e e e e e e e e e e /"
+#		 "e e e # . # # . . . . . . . . . . . < . . . . . . . # e e e e e e e e e e e e e e e /"
 #		 "e e e # . # # . # # # # . # # # . # # # # # # # # . # e e e e e e e e e e e e e e e /"
 #		 "e e e # . # # . # e e # . # # # . # e e e e e e # . # e e e e e e e e e e e e e e e /"
 #		 "e e e # . # # . # e e # . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e /"
@@ -608,17 +660,17 @@ try:
 #		 "e e e e e e e e e # # # e e e e e e e e e e e e # # # e e e e e e e e e e e e e e e"
 #		)
 
-#	s = (". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#	s1 = (". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
 #		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
 #		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
 #		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . #/"
 #		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . #/"
 #		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . #/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . < . . . . . . . . . . . . . . . . e/"
 #		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
 #		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
 #		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
-#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
-#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . > . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
 #		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
 #		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
 #		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
@@ -629,25 +681,32 @@ try:
 #		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
 #		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e"
 #		)
-	
+
+	dungeon = []
 	#initialize our level with the input string
-	logRecord = ["Hello", "Welcome to", "RoguelikeThing"]
-	levelOne = Level(s)
+	s = levelGenerator.generateLevel(Gb.windowHeight, Gb.windowWidth, True)
+	dungeon.append(Level(s))
+	
+	for i in range(4):
+		s = levelGenerator.generateLevel(Gb.windowHeight, Gb.windowWidth, False)
+		dungeon.append(Level(s))
 	#initialize our character at an occupiable point on our new map
-	for character in levelOne.characters:
+	for character in dungeon[0].characters:
 		if character.symbol == '@':
 			player = character
+			player.name = "foobar"
+			player.currentLevel = 0
 	
-	player.name = "foobar"
+	logRecord = ["Hello", "Welcome to", "RoguelikeThing"]
 	
 	#initialize our input character variable
 	c = 0
 
 	#while we don't recieve the quit character we keep executing the draw-getcharacter loop
 	while chr(c) != 'q' and player.currentHp > 0:
-		levelOne.clearTileValues()
+		dungeon[player.currentLevel].clearTileValues()
 		#draw our map and handle relevant input
-		drawMap(c, mapScreen, levelOne.levelMap, player)
+		drawMap(c, mapScreen, player, dungeon[player.currentLevel])
 		#wait for a new keystroke
 		c = mapScreen.getch()		
 		
