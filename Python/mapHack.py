@@ -452,22 +452,34 @@ class Tile:
 		
 		return [self.terrain.symbol, self.terrain.color]
 
+	#listAdjacentTiles returns a list of tiles that are adjacent to the tile
+	#calling the function
+	#Parameters: 	A map of the level.
+	#Returns: 		A list of adjacent tiles
 	def listAdjacentTiles(self, levelMap):
+		#For brevity
 		y = self.yPos
 		x = self.xPos
+		#Initialize our new list
 		adjacentTiles = []
+
+		#If there is a tile above us, add it to the list.
 		if y > 0:
 			adjacentTiles.append(levelMap[y - 1][x])		#Up
 
+		#If there is a tile below us, add it to the list.
 		if y < len(levelMap) - 1:
 			adjacentTiles.append(levelMap[y + 1][x])		#Down
 
+		#If there is a tile to our right, add it to the list.
 		if x < len(levelMap[y]) - 1:
 			adjacentTiles.append(levelMap[y][x + 1])		#Right
 
+		#If there is a tile to our left, add it to the list.
 		if x > 0:
 			adjacentTiles.append(levelMap[y][x - 1])		#Left
 
+		#You get the idea
 		if y < len(levelMap) - 1 and x < len(levelMap[y]) - 1:
 			adjacentTiles.append(levelMap[y + 1][x + 1])	#DownRight
 		
@@ -480,26 +492,31 @@ class Tile:
 		if y < len(levelMap) - 1 and x > 0:
 			adjacentTiles.append(levelMap[y + 1][x - 1])	#DownLeft
 
+		#Return our list
 		return adjacentTiles
 
 
 #our level class represents a specific level of the dungeon.
-#generally it has a level number, and a map of the tiles on the level.
+#it has a level number, and a map of the tiles on the level.
 class Level:
-	#Our level map starts as an empty list
-	
-	#Our level number initializes at 0
-	levelNumber = 0
 	
 	#Our intialization function takes a string that represents
-	#a map of a level. Rows of the string are seperated by the /
+	#a map of a level. Rows of the map are seperated by the /
 	#character, and individual spaces are seperated by whitespace
 	def __init__(self, mapString):
+		#Our level map starts as an empty list
 		self.levelMap = []
-		y = 0
+		#Our characters array will keep track of the characters
+		#currently running around on the level.
 		self.characters = []
-		characters = []
+		#On the other hand, our newCharacters list keeps track
+		#of what characters we'll be initializing and where once the
+		#map is finished building.
+		newCharacters = []
 
+		#We're starting at the top, and making rows
+		#as we go down.
+		y = 0
 		#split our input string into rows,
 		#and then iterate across them
 		for row in mapString.split('/'):
@@ -508,51 +525,91 @@ class Level:
 			#iterate across each row
 			x = 0
 			for space in row.split():
-				#identify which terrain type each character
-				#signifies, and add a tile of that type.
+				#identify what type each character
+				#signifies, and add whatever that character 
+				#represents to our row.
+				
+				#A wall.
 				if space == "#":
 					tileRow.append(Tile(Wall, y, x))
+				
+				#An empty tile.
 				elif space == ".":
 					tileRow.append(Tile(Floor, y, x))
 
+				#A staircase going up.
 				elif space == "<":
 					tileRow.append(Tile(UpStairs, y, x))
+					#Mark out the coordinates of our staircase,
+					#so that when the player comes up the stairs above us,
+					#we will know where to put them.
 					self.UpCoordinates = [y, x]
+				
+				#A staircase going down.
 				elif space == ">":
 					tileRow.append(Tile(DownStairs, y, x))
+					#Mark out the coordinates of our staircase,
+					#so that when the player comes up the stairs beneath us,
+					#we will know where to put them.
 					self.DownCoordinates = [x, y]
 
+				#A space goblin.
 				elif space == "g":
-					characters.append(["SpaceGoblin", self, y, x])
+					#Put a space goblin onto the list of characters to initialize
+					newCharacters.append(["SpaceGoblin", y, x])
+					#append a tile with an empty floor for now
 					tileRow.append(Tile(Floor, y, x))
+				
+				#Our player character
 				elif space == "@":
-					characters.append(["Player", self, y, x])
+					#Put our player onto the list of characters to initialize.
+					newCharacters.append(["Player", y, x])
+					#append an empty floor tile
 					tileRow.append(Tile(Floor, y, x))
-				elif space == "%":
-					newTile = Tile(Floor, y, x)
-					newTile.contents.append(Potion())
-					tileRow.append(newTile)
 
+				#A potion
+				elif space == "%":
+					#Create our new tile.
+					newTile = Tile(Floor, y, x)
+					#Put a potion on it.
+					newTile.contents.append(Potion())
+					#Append this tile to the row.
+					tileRow.append(newTile)
 
 				else:
 					#if the character is unrecognized,
 					#initialize an empty tile 
 					#(nothing in it, basic terrain type, which is impassable)
 					tileRow.append(Tile(TerrainType, y, x))
+				#Increment our x counter (we're moving to the next tile in the row)
 				x += 1
-			#append the row to our levelMap
+			#Once we're done populating the row,
+			#we append it to our levelMap
 			self.levelMap.append(tileRow)
+			#Then we move down and start populating our next row
 			y += 1
-			while characters:
-				newChar = characters.pop()
-				if newChar[0] == "SpaceGoblin":
-					SpaceGoblin(newChar[1], newChar[2], newChar[3])
-				elif newChar[0] == "Player":
-					Player(newChar[1], newChar[2], newChar[3])
 
+		#After we've built the dungeon, we initialize the characters where
+		#they're supposed to go.
+		while newCharacters:
+			#If there are still characters to initialize, grab one
+			newChar = newCharacters.pop()
+			#If it's name is "SpaceGoblin", initialize a space goblin
+			#at the y and x coordinates we have. (NewChar[2] and [3] respectively)
+			if newChar[0] == "SpaceGoblin":
+				SpaceGoblin(self, newChar[1], newChar[2])
+			#Otherwise if we're initializing a player, we do that in the same way.
+			elif newChar[0] == "Player":
+				Player(self, newChar[1], newChar[2])
+
+	#Our clearTileValues function goes through the level and resets all the little
+	#properties on every tile.
 	def clearTileValues(self):
+		#Go through the map
 		for row in self.levelMap:
+			#For each tile
 			for tile in row:
+				#Reset everything
 				tile.pathValue = 0
 				tile.visible = False
 
