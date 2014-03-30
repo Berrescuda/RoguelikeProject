@@ -53,6 +53,7 @@ class Character:
 		level.characters.append(self)
 		#let the tile we're initializing on know we're here
 		level.levelMap[yPos][xPos].character = self
+		self.regenCounter = 0
 
 	#The attack function allows one character to attack another.
 	#Paramaters: the character to be attacked
@@ -170,7 +171,7 @@ class Character:
 		if self == player:
 			self.level.levelMap[self.yPos][self.xPos].visible = True
 			self.level.levelMap[self.yPos][self.xPos].explored = True
-			
+
 		#for now the only distance that characters are able to see out to is 8 squares,
 		#this can and should be updated later.
 		distance = 8
@@ -229,6 +230,14 @@ class Character:
 							#If the tile we're looking at is opaque, we stop walking along this line
 							if (tile.terrain.passable == False):
 								break
+
+	def healNaturally(self):
+		if self.currentHp < self.maxHp:
+			self.regenCounter += 1
+			if self.regenCounter >= 10:
+				self.currentHp += 1
+				self.regenCounter = 1
+
 
 #Our monster class defines any character that is not the player
 #currently it is a list of AI functions for hostile characters
@@ -343,7 +352,8 @@ class Monster (Character):
 	#and then executing that plan.
 	#Parameters: 		None
 	#Returns: 			Nothing
-	def takeTurn(self):
+	def takeTurn(self):		
+		self.healNaturally()
 		#Refresh line of sight
 		self.getLineOfSight()
 		#If we can see the hero, adjust our directions so we're moving towards them
@@ -361,6 +371,126 @@ class Player (Character):
 	xp = 0
 	#The player symbol is '@'
 	symbol = '@'
+
+	def takeTurn(self, c):
+		passTurn = False
+		level = player.level
+		#if our command is a directional key,
+	#we move our player
+		if c == 65 or c == 56 or chr(c) == 'w':
+			self.move([-1, 0])
+			passTurn = True
+
+		if c == 66 or c == 50 or chr(c) == 's':
+			self.move([1, 0])
+			passTurn = True
+
+		if c == 67 or c == 54 or chr(c) == 'd':
+			self.move([0, 1])
+			passTurn = True
+
+		if c == 68 or c == 52 or chr(c) == 'a':
+			self.move([0, -1])
+			passTurn = True
+
+		if c == 49:
+			self.move([+1, -1])
+			passTurn = True
+
+		if c == 51:
+			self.move([+1, 1])
+			passTurn = True
+
+		if c == 55:
+			self.move([-1, -1])
+			passTurn = True
+
+		if c == 57: 
+			self.move([-1, 1])
+			passTurn = True
+
+		#If the command is numpad 5, we wait a turn and do nothing.
+		if c == 53:
+			passTurn = True
+
+		#If the command is g, we attempt to pick up an item in our tile
+		if chr(c) == 'g':
+			self.pickup()
+			passTurn = True
+
+		#If the command is u, we use a potion in our inventory
+		if chr(c) == 'u':
+			#If we have any, that is
+			if self.inventory:
+				self.inventory[0].drink(self)
+				passTurn = True
+		
+		#If the command is '<', we attempt to go up a staircase
+		if chr(c) == '<':
+			passTurn = True
+			#If we're standing on a staircase that goes up, that is
+			if level.levelMap[self.yPos][self.xPos].terrain.symbol == '<':
+				#Remove ourself from the level's array of characters
+				level.characters.remove(self)
+				#Remove our character from the tile it's on
+				level.levelMap[self.yPos][self.xPos].character = NullCharacter()
+				#Set the currentLevel up one (towards 0)
+				self.currentLevel -= 1
+				#Set our current level to the new level
+				self.level = dungeon[self.currentLevel]
+				#Set the level for the rest of the function to the new level
+				level = self.level
+				#Add our character to the new level's character list
+				level.characters.append(self)
+				
+				#Set our player's coordinates to the coordinates of the new
+				#staircase we'll be standing on.
+				self.yPos = level.DownCoordinates[0]
+				self.xPos = level.DownCoordinates[1]
+				Gb.debug.append(level.DownCoordinates)
+				Gb.debug.append([self.yPos, self.xPos])
+
+				#update the new tile we're on so it knows we're there
+				self.level.levelMap[self.yPos][self.xPos].character = self
+			else :
+				#The player's trying to do an impossible thing, otherwise
+				log("Sorry, you can't go up here")
+
+
+		#If the command is '>', we attempt to go down a staircase
+		if chr(c) == '>':
+			passTurn = True
+			#If we're standing on a staircase that goes down, that is
+			if level.levelMap[self.yPos][self.xPos].terrain.symbol == '>':
+				#Remove ourself from the level's array of characters
+				level.characters.remove(self)
+				#Remove our character from the tile it's on
+				level.levelMap[self.yPos][self.xPos].character = NullCharacter()
+				
+				#Set the currentLevel Down one (towards the bottom of the dungeon)
+				self.currentLevel += 1
+				#Set our current level to the new level
+				self.level = dungeon[self.currentLevel]
+				#Set the level for the rest of the function to the new level
+				level = self.level
+
+				#Add our character to the new level's character list
+				level.characters.append(self)
+
+				Gb.debug.append([self.yPos, self.xPos])
+				#Set our player's coordinates to the coordinates of the new
+				#staircase we'll be standing on.
+				self.yPos = level.UpCoordinates[0]
+				self.xPos = level.UpCoordinates[1]
+
+				#update the new tile we're on so it knows we're there
+				level.levelMap[self.yPos][self.xPos].character = self
+			else :
+				#The player's trying to do an impossible thing, otherwise
+				log("Sorry, you can't go down here")
+		if passTurn:
+			self.healNaturally()
+		return passTurn
 
 #The SpaceGoblin is currently our only enemy,
 #But as the game develops we should add scores more.
@@ -579,7 +709,7 @@ class Level:
 					#Mark out the coordinates of our staircase,
 					#so that when the player comes up the stairs beneath us,
 					#we will know where to put them.
-					self.DownCoordinates = [x, y]
+					self.DownCoordinates = [y, x]
 
 				#A space goblin.
 				elif space == "g":
@@ -655,6 +785,25 @@ class Potion(Item):
 		if character.currentHp > character.maxHp:
 			character.currentHp = character.maxHp
 		character.inventory.remove(self)
+
+# # # # # # # # # # # # # # TURN MANAGEMENT # # # # # # # # # # # # # # # # 
+def processTurn(c, level):
+	passTurn = player.takeTurn(c)
+
+	#If a turn has passed in game time, all the characters on the level
+	#get to take turns
+	if passTurn:
+		#This is one of the primary reasons that the level
+		#keeps track of which characters are on it
+		for character in level.characters:
+			#The player doesn't get an automated turn
+			if character.symbol != '@':
+				#This will refresh every monster's line of sight,
+				#and carry out various AI tasks
+				character.takeTurn()
+
+	#Refresh the player's line of sight
+	player.getLineOfSight()
 
 
 # # # # # # # # # # # # # # GENERAL USE FUNCTIONS# # # # # # # # # # # # # #
@@ -740,140 +889,9 @@ def initCurses():
 #should probably be moved out of the draw loop) it then draws the level map it is given
 #based on the position of the player
 #paramaters: input character, screen to draw on, levelmap to draw, the player object
-def drawMap(c, screen, player, level):
+def drawMap(screen, player, levelMap):
 	#clear the screen of any leftover residue
 	screen.clear()
-	passTurn = False
-	#if our command is a directional key,
-	#we move our player
-	if c == 65 or c == 56 or chr(c) == 'w':
-		player.move([-1, 0])
-		passTurn = True
-
-	if c == 66 or c == 50 or chr(c) == 's':
-		player.move([1, 0])
-		passTurn = True
-
-	if c == 67 or c == 54 or chr(c) == 'd':
-		player.move([0, 1])
-		passTurn = True
-
-	if c == 68 or c == 52 or chr(c) == 'a':
-		player.move([0, -1])
-		passTurn = True
-
-	if c == 49:
-		player.move([+1, -1])
-		passTurn = True
-
-	if c == 51:
-		player.move([+1, 1])
-		passTurn = True
-
-	if c == 55:
-		player.move([-1, -1])
-		passTurn = True
-
-	if c == 57: 
-		player.move([-1, 1])
-		passTurn = True
-
-	#If the command is numpad 5, we wait a turn and do nothing.
-	if c == 53:
-		passTurn = True
-
-	#If the command is g, we attempt to pick up an item in our tile
-	if chr(c) == 'g':
-		player.pickup()
-
-	#If the command is u, we use a potion in our inventory
-	if chr(c) == 'u':
-		#If we have any, that is
-		if player.inventory:
-			player.inventory[0].drink(player)
-			passTurn = True
-	
-	#If the command is '<', we attempt to go up a staircase
-	if chr(c) == '<':
-		#If we're standing on a staircase that goes up, that is
-		if level.levelMap[player.yPos][player.xPos].terrain.symbol == '<':
-			#Remove ourself from the level's array of characters
-			level.characters.remove(player)
-			#Remove our character from the tile it's on
-			level.levelMap[player.yPos][player.xPos].character = NullCharacter()
-			
-			#Set the currentLevel up one (towards 0)
-			player.currentLevel -= 1
-			#Set our current level to the new level
-			player.level = dungeon[player.currentLevel]
-			#Set the level for the rest of the function to the new level
-			level = player.level
-			#Add our character to the new level's character list
-			level.characters.append(player)
-			
-			#Set our player's coordinates to the coordinates of the new
-			#staircase we'll be standing on.
-			player.yPos = level.DownCoordinates[0]
-			player.xPos = level.DownCoordinates[1]
-
-			#update the new tile we're on so it knows we're there
-			level.levelMap[player.yPos][player.xPos].character = player
-		else :
-			#The player's trying to do an impossible thing, otherwise
-			log("Sorry, you can't go up here")
-
-
-	#If the command is '>', we attempt to go down a staircase
-	if chr(c) == '>':
-		#If we're standing on a staircase that goes down, that is
-		if level.levelMap[player.yPos][player.xPos].terrain.symbol == '>':
-			#Remove ourself from the level's array of characters
-			level.characters.remove(player)
-			#Remove our character from the tile it's on
-			level.levelMap[player.yPos][player.xPos].character = NullCharacter()
-			
-			#Set the currentLevel Down one (towards the bottom of the dungeon)
-			player.currentLevel += 1
-			#Set our current level to the new level
-			player.level = dungeon[player.currentLevel]
-			#Set the level for the rest of the function to the new level
-			level = player.level
-
-			#Add our character to the new level's character list
-			level.characters.append(player)
-
-			#Set our player's coordinates to the coordinates of the new
-			#staircase we'll be standing on.
-			player.yPos = level.UpCoordinates[0]
-			player.xPos = level.UpCoordinates[1]
-
-			#update the new tile we're on so it knows we're there
-			level.levelMap[player.yPos][player.xPos].character = player
-		else :
-			#The player's trying to do an impossible thing, otherwise
-			log("Sorry, you can't go down here")
-
-	#Just so we don't have to type level.levelmap every time we want
-	#to reference the map.
-	#(We do this here because before this point our level could have changed)
-	levelMap = level.levelMap
-
-	#If a turn has passed in game time, all the characters on the level
-	#get to take turns
-	if passTurn:
-		#This is one of the primary reasons that the level
-		#keeps track of which characters are on it
-		for character in level.characters:
-			#The player doesn't get an automated turn
-			if character.symbol != '@':
-				#This will refresh every monster's line of sight,
-				#and carry out various AI tasks
-				character.takeTurn()
-
-	#Refresh the player's line of sight
-	player.getLineOfSight()
-
-	#Now we actually go about drawing the map.
 
 	#Draw a box around the map screen
 	drawBox(0, 0, Gb.windowHeight, Gb.windowWidth, screen)
@@ -994,7 +1012,8 @@ try:
 	while chr(c) != 'q' and player.currentHp > 0:
 		dungeon[player.currentLevel].clearTileValues()
 		#draw our map and handle relevant input
-		drawMap(c, mapScreen, player, dungeon[player.currentLevel])
+		processTurn(c, dungeon[player.currentLevel])
+		drawMap(mapScreen, player, dungeon[player.currentLevel].levelMap)
 		#wait for a new keystroke
 		c = mapScreen.getch()		
 		
