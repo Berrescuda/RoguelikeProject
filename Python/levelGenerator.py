@@ -30,9 +30,6 @@ class Room:
 				levelMap[self.yPos + y][self.xPos + x] = '.'
 
 	def connect(self, room, levelMap):
-#		entrance = ''
-#		xDirection = ''
-#		yDirection = ''
 
 		if room.xPos > self.xPos:
 			xDirection = 'east'
@@ -71,6 +68,7 @@ class Room:
 			else: 
 				goSouth(corridor, room, levelMap)
 		self.connected = True
+		return True
 
 
 def wallAdjacentSpaces(x, y, levelMap):
@@ -126,51 +124,28 @@ def coinFlip():
 def goNorth(corridor, target, levelMap):
 	debug = corridor
 	while corridor[0] > (target.yPos + target.height - 1):
-		if corridor[0] < len(levelMap) -1 and corridor[0] > 0:
-			if corridor[0] < len(levelMap[corridor[0]]) - 1 and corridor[1] > 0:
-				levelMap[corridor[0]][corridor[1]] = '.'
-				corridor[0] -= 1
-			else: 
-				break
-		else: 
-			break
+		levelMap[corridor[0]][corridor[1]] = '.'
+		corridor[0] -= 1
 
 def goSouth(corridor, target, levelMap):
 	gb.debug = corridor
 	while corridor[0] < (target.yPos + 1):
-		if corridor[0] < len(levelMap) -1 and corridor[0] > 0:
-			if corridor[0] < len(levelMap[corridor[0]]) - 1 and corridor[1] > 0:
-				levelMap[corridor[0]][corridor[1]] = '.'
-				corridor[0] += 1
-			else: 
-				break
-		else: 
-			break
+		levelMap[corridor[0]][corridor[1]] = '.'
+		corridor[0] += 1
+
 
 def goEast(corridor, target, levelMap):
 	gb.debug = corridor
 	while corridor[1] < (target.xPos + 1):
-		if corridor[0] < len(levelMap) -1 and corridor[0] > 0:
-			if corridor[0] < len(levelMap[corridor[0]]) - 1 and corridor[1] > 0:
-				levelMap[corridor[0]][corridor[1]] = '.'
-				corridor[1] += 1
-			else: 
-				break
-		else: 
-			break
+		levelMap[corridor[0]][corridor[1]] = '.'
+		corridor[1] += 1
+
 
 def goWest(corridor, target, levelMap):
 	gb.debug = corridor
 	while corridor[1] > (target.xPos + target.width - 1):
-		if corridor[0] < len(levelMap) -1 and corridor[0] > 0:
-			if corridor[0] < len(levelMap[corridor[0]]) - 1 and corridor[1] > 0:
-				levelMap[corridor[0]][corridor[1]] = '.'
-				corridor[1] -= 1
-			else: 
-				break
-
-		else: 
-			break
+		levelMap[corridor[0]][corridor[1]] = '.'
+		corridor[1] -= 1
 
 def levelMapToString(levelMap):
 	mapString = ''
@@ -213,7 +188,11 @@ def generateLevel(mapWidth, mapHeight, start):
 
 	while unconnectedRooms:
 		room = unconnectedRooms.pop()
-		room.connect(connectedRooms[randint(0, len(connectedRooms)) -1], levelMap)
+		try:
+			room.connect(connectedRooms[randint(0, len(connectedRooms)) -1], levelMap)
+		except:
+			unconnectedRooms.append(room)
+
 		connectedRooms.append(room)
 
 	addWalls(levelMap)
@@ -226,6 +205,8 @@ def generateLevel(mapWidth, mapHeight, start):
 		if coinFlip():
 			if coinFlip():
 				room.placeInRoom("g", levelMap)
+		if randint(1, 5) == 5:
+			room.placeInRoom("%", levelMap)
 
 	return levelMapToString(levelMap)
 
@@ -235,3 +216,50 @@ except:
 	print "debug is " + str(gb.debug)
 	traceback.print_exc()
 	
+
+
+
+		#Populate levelMap string
+#	s2 = ("e e e # # # # e e e e e e e e e e e e e e e e e # # # e e e e e e e e e e e e e e e /"
+#		 "e e e # . . # # # # # # # # # # # # e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # . # # . . . . . . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # . # # . # # # # . # # # . # # # # # # # # . # # # # # # # # # # # # # # # # /"
+#		 "e e e # . # # . # e e # . # # # . . . . . . . . . . . . . . . . . . . . . . . . . # /"
+#		 "e e e # . # # . # e e # . . . . . # # # # # # # # . # # # # # # # # # # # # # # # # /"
+#		 "e e e # . . > . # # # # % # # # # # e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # # # # # # # @ . . # e e e e e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e e e e e e e # . # # # e e e e e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # # # e e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # . # # e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # . . # # # # . # # # # # # # # # # # # # # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # . # # . . . . . . . . . . . < . . . . . . . # e e e e e e e e e e e e e e e /"
+#		 "e e e # . # # . # # # # . # # # . # # # # # # # # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # . # # . # e e # . # # # . # e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # . # # . # e e # . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # . . . . # # # # . # # # # # e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e # # # # # # # . . . # e e e e e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e e e e e e e # . # # # e e e e e e e e e e # . # e e e e e e e e e e e e e e e /"
+#		 "e e e e e e e e e # # # e e e e e e e e e e e e # # # e e e e e e e e e e e e e e e"
+#		)
+
+#	s1 = (". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . #/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . #/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . #/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . < . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . > . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e/"
+#		 ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . e"
+#		)
