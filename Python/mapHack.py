@@ -231,12 +231,20 @@ class Character:
 							if (tile.terrain.passable == False):
 								break
 
+	#Every character should heal naturally over time
+	#Every ten turns, a character heals 1 hp
+	#Parameters: 	None
+	#Returns: 		Nothing
 	def healNaturally(self):
+		#If we should be healing, we do
 		if self.currentHp < self.maxHp:
+			#If we've been healing ten turns, 
+			#Heal 1 hp
 			self.regenCounter += 1
 			if self.regenCounter >= 10:
 				self.currentHp += 1
-				self.regenCounter = 1
+				#Start regenerating again
+				self.regenCounter = 0
 
 
 #Our monster class defines any character that is not the player
@@ -773,20 +781,35 @@ class Level:
 
 # # # # # # # # # # # # # # # # ITEMS # # # # # # # # # # # # # # # # # # #
 
+#Items can be picked up, but they sit on the floor usually, displaying a symbol
 class Item:
+	#What the item will display on the map
 	symbol = "%"
+	#Color of the item
 	color = curses.COLOR_BLUE
+	#Name of the item
 	name = "item"
-	
+
+#Potions heal their user by five hp
 class Potion(Item):
+	#change the name
 	name = "potion"
+	#The drink function uses the potion and heals the user
+	#Parameters: 	character using the potion
+	#Returns: 		Nothing
 	def drink(self, character):
+		#Heal the character
 		character.currentHp += 5
+		#But cap it out at the maxHp
 		if character.currentHp > character.maxHp:
 			character.currentHp = character.maxHp
+		#Use up the potion
 		character.inventory.remove(self)
 
 # # # # # # # # # # # # # # TURN MANAGEMENT # # # # # # # # # # # # # # # # 
+#The processTurn function manages the flow of the turn
+#Parameters: 	The input character for this turn, the level the turn is happening on
+#Returns: 		none
 def processTurn(c, level):
 	passTurn = player.takeTurn(c)
 
