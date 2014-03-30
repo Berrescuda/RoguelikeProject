@@ -167,7 +167,10 @@ class Character:
 		self.lineOfSight = []
 		#We assume we can see ourselves
 		self.lineOfSight.append(self.level.levelMap[self.yPos][self.xPos])
-		self.level.levelMap[self.yPos][self.xPos].visible = True
+		if self == player:
+			self.level.levelMap[self.yPos][self.xPos].visible = True
+			self.level.levelMap[self.yPos][self.xPos].explored = True
+			
 		#for now the only distance that characters are able to see out to is 8 squares,
 		#this can and should be updated later.
 		distance = 8
@@ -220,6 +223,8 @@ class Character:
 							#If we're the point of view character, we highlight tiles in our line of sight
 							if self == player:
 								tile.visible = True
+								if not tile.explored:
+									tile.explored = True
 
 							#If the tile we're looking at is opaque, we stop walking along this line
 							if (tile.terrain.passable == False):
@@ -420,6 +425,7 @@ class DownStairs (TerrainType):
 #it has a terrain type
 class Tile:
 	visible = False
+	explored = False
 	#tiles start empty of characters
 	character = NullCharacter()
 	#tiles start empty of items
@@ -467,6 +473,10 @@ class Tile:
 			#magenta is the color we're using to
 			#denote not seeing it currently
 			color = curses.COLOR_MAGENTA
+			
+		#If the player hasn't seen it yet, we won't print it.
+		if not self.explored:
+			symbol = ''
 
 		return [symbol, color]
 
