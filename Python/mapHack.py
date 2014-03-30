@@ -165,6 +165,9 @@ class Character:
 	def getLineOfSight(self):
 		#empty our list
 		self.lineOfSight = []
+		#We assume we can see ourselves
+		self.lineOfSight.append(self.level.levelMap[self.yPos][self.xPos])
+		self.level.levelMap[self.yPos][self.xPos].visible = True
 		#for now the only distance that characters are able to see out to is 8 squares,
 		#this can and should be updated later.
 		distance = 8
@@ -195,7 +198,7 @@ class Character:
 									#otherwise we're looking towards the bottom half of the 
 									#map, and y should increment.
 									y += 1
-							#
+
 							if direction & 1:
 								#If our direction is odd, we're looking left instead of right,
 								#so we're looking at coordinates towards x == 0 instead of 
@@ -444,13 +447,28 @@ class Tile:
 		if self.character.symbol != '':
 			#If there is a character in the tile, we return the 
 			#symbol and color provided by that character
-			return [self.character.symbol, self.character.color]
-		elif self.contents:
-			return [self.contents[0].symbol, self.contents[0].color]
-			#if there's no character in the tile, we'll return the
-			#symbol and color provided by the terrain
+			symbol = self.character.symbol
+			color = self.character.color
 		
-		return [self.terrain.symbol, self.terrain.color]
+		#If there's no character, but there are items, return the first
+		#item's symbol and color
+		elif self.contents:
+			symbol = self.contents[0].symbol
+			color = self.contents[0].color
+			
+		else: 
+			#If the tile is empty, we'll return the
+			#symbol provided by the terrain
+			symbol = self.terrain.symbol
+			color = self.terrain.color
+
+		if not self.visible:
+			#if the square is not visible, 
+			#magenta is the color we're using to
+			#denote not seeing it currently
+			color = curses.COLOR_MAGENTA
+
+		return [symbol, color]
 
 	#listAdjacentTiles returns a list of tiles that are adjacent to the tile
 	#calling the function
@@ -631,9 +649,12 @@ class Potion(Item):
 
 # # # # # # # # # # # # # # GENERAL USE FUNCTIONS# # # # # # # # # # # # # #
 
-def empty(listToEmpty):
-	while listToEmpty:
-		del listToEmpty[0]
+#This is just a tiny wrapper,
+#but when you call this function 
+#it should output this message to the screen
+#in a place that the player can see it
+#Parameters: 	(string)The message you want to log.
+#Returns: 		Nothing
 def log(message):
 	logRecord.append(message)
 
@@ -675,9 +696,34 @@ def hColoredLine(y, x, char, num, color, screen):
 	while i < num:
 		screen.addch(y, x + i, char, color)
 		i += 1
+
+def initCurses():
+	mapScreen = curses.initscr()
+	# turn off keystroke echo
+	curses.noecho()
+	# hide the cursor
+	curses.curs_set(0)
+
+	# keystrokes are honored immediately, rather than waiting for the
+	# user to hit Enter
+	curses.cbreak()
+	# start color display
+	curses.start_color()
+	# set up a foreground/background color pair that we'll use for indicating selection
+	curses.init_pair(curses.COLOR_WHITE,curses.COLOR_WHITE, curses.COLOR_BLACK)
+	curses.init_pair(curses.COLOR_RED,curses.COLOR_RED,curses.COLOR_BLACK)
+	curses.init_pair(curses.COLOR_GREEN, curses.COLOR_GREEN, curses.COLOR_BLACK)
+	curses.init_pair(curses.COLOR_BLUE, curses.COLOR_BLUE, curses.COLOR_BLACK)
+	curses.init_pair(curses.COLOR_CYAN, curses.COLOR_CYAN, curses.COLOR_BLACK)
+	curses.init_pair(curses.COLOR_MAGENTA, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
+	curses.init_pair(curses.COLOR_YELLOW, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+	curses.init_pair(10, curses.COLOR_BLACK, curses.COLOR_MAGENTA)
+	# clear screen
+	mapScreen.clear()
+	mapScreen.refresh()
+	return mapScreen
+
 # # # # # # # # # # # # # # IN GAME DISPLAY FUNCTIONS # # # # # # # # # # # #
-
-
 
 #our drawMap function is where our primary in game curses calls take place
 #it takes a command character, and modifies the game accordingly (which in the future
@@ -722,108 +768,147 @@ def drawMap(c, screen, player, level):
 		player.move([-1, 1])
 		passTurn = True
 
+	#If the command is numpad 5, we wait a turn and do nothing.
 	if c == 53:
 		passTurn = True
 
+	#If the command is g, we attempt to pick up an item in our tile
 	if chr(c) == 'g':
 		player.pickup()
 
+	#If the command is u, we use a potion in our inventory
 	if chr(c) == 'u':
+		#If we have any, that is
 		if player.inventory:
 			player.inventory[0].drink(player)
 			passTurn = True
 	
+	#If the command is '<', we attempt to go up a staircase
 	if chr(c) == '<':
+		#If we're standing on a staircase that goes up, that is
 		if level.levelMap[player.yPos][player.xPos].terrain.symbol == '<':
+			#Remove ourself from the level's array of characters
 			level.characters.remove(player)
+			#Remove our character from the tile it's on
 			level.levelMap[player.yPos][player.xPos].character = NullCharacter()
 			
+			#Set the currentLevel up one (towards 0)
 			player.currentLevel -= 1
+			#Set our current level to the new level
 			player.level = dungeon[player.currentLevel]
+			#Set the level for the rest of the function to the new level
 			level = player.level
+			#Add our character to the new level's character list
 			level.characters.append(player)
 			
+			#Set our player's coordinates to the coordinates of the new
+			#staircase we'll be standing on.
 			player.yPos = level.DownCoordinates[0]
 			player.xPos = level.DownCoordinates[1]
+
+			#update the new tile we're on so it knows we're there
 			level.levelMap[player.yPos][player.xPos].character = player
 		else :
+			#The player's trying to do an impossible thing, otherwise
 			log("Sorry, you can't go up here")
-	if chr(c) == '>':
-		if level.levelMap[player.yPos][player.xPos].terrain.symbol == '>':
-			level.characters.remove(player)
-			level.levelMap[player.yPos][player.xPos].character = NullCharacter()
 
+
+	#If the command is '>', we attempt to go down a staircase
+	if chr(c) == '>':
+		#If we're standing on a staircase that goes down, that is
+		if level.levelMap[player.yPos][player.xPos].terrain.symbol == '>':
+			#Remove ourself from the level's array of characters
+			level.characters.remove(player)
+			#Remove our character from the tile it's on
+			level.levelMap[player.yPos][player.xPos].character = NullCharacter()
+			
+			#Set the currentLevel Down one (towards the bottom of the dungeon)
 			player.currentLevel += 1
+			#Set our current level to the new level
 			player.level = dungeon[player.currentLevel]
+			#Set the level for the rest of the function to the new level
 			level = player.level
+
+			#Add our character to the new level's character list
 			level.characters.append(player)
+
+			#Set our player's coordinates to the coordinates of the new
+			#staircase we'll be standing on.
 			player.yPos = level.UpCoordinates[0]
 			player.xPos = level.UpCoordinates[1]
+
+			#update the new tile we're on so it knows we're there
 			level.levelMap[player.yPos][player.xPos].character = player
 		else :
+			#The player's trying to do an impossible thing, otherwise
 			log("Sorry, you can't go down here")
 
+	#Just so we don't have to type level.levelmap every time we want
+	#to reference the map.
+	#(We do this here because before this point our level could have changed)
 	levelMap = level.levelMap
 
+	#If a turn has passed in game time, all the characters on the level
+	#get to take turns
 	if passTurn:
+		#This is one of the primary reasons that the level
+		#keeps track of which characters are on it
 		for character in level.characters:
+			#The player doesn't get an automated turn
 			if character.symbol != '@':
+				#This will refresh every monster's line of sight,
+				#and carry out various AI tasks
 				character.takeTurn()
 
+	#Refresh the player's line of sight
 	player.getLineOfSight()
-		
+
+	#Now we actually go about drawing the map.
 
 	#Draw a box around the map screen
 	drawBox(0, 0, Gb.windowHeight, Gb.windowWidth, screen)
 
 	#draw a box around our output zone
 	drawBox(Gb.windowHeight + 1, 0, 4, Gb.windowWidth, screen)
+
+	#Print the last three messages in the log
 	if logRecord:
 		screen.addstr(Gb.windowHeight +4, 1, logRecord[len(logRecord)-1])
 		screen.addstr(Gb.windowHeight +3, 1, logRecord[len(logRecord) -2])
-		screen.addstr(Gb.windowHeight +2, 1, logRecord[len(logRecord)-3] )
+		screen.addstr(Gb.windowHeight +2, 1, logRecord[len(logRecord)-3])
 
-	#draw our stats display:
+	#draw our stats display window:
 	statsWindow(0, Gb.windowWidth + 1, Gb.windowHeight, 23, screen)
 	
 	#this is the block of code where we draw the actual map itself
+	
+	#We start in the center of the screen and work outwards from there.
 	y = Gb.windowHeight/2
-
+	#We go down the map row by row
 	for row in levelMap:
+		#We initialize X here because we start at the center of the screen,
+		#but for asthetic reasons, every in game x coordinate is two spaces
+		#as far as curses is concerned
 		x = Gb.windowWidth/4
+		#Make sure we don't collide with the edges of the map and try to draw
+		#things that aren't there.
 		if y - player.yPos > 0 and y - player.yPos < Gb.windowHeight:
+			#Iterate over every square on the row
 			for square in row:
+				#Get the information about how to display that square
 				squareDisplay = square.printTile()
-				if square.visible and square.character.symbol == '':
-					squareDisplay[1] = curses.COLOR_GREEN
+				#Make sure we're not going to collide with either side of our window
 				if x - player.xPos > 0 and (x * 2) - (player.xPos * 2) < Gb.windowWidth:
+					#Print the current square to the screen
 					screen.addstr(y - player.yPos, (x * 2) - (player.xPos * 2), squareDisplay[0], curses.color_pair(squareDisplay[1]))
+					#print an empty space (for effect)
 					screen.addstr(y - player.yPos, x - player.xPos, '')
+				#Next square
 				x += 1
+		#next row
 		y += 1
+		#Refresh the screen so the changes will take effect
 		screen.refresh()
-
-def initCurses():
-	mapScreen = curses.initscr()
-	# turn off keystroke echo
-	curses.noecho()
-	# hide the cursor
-	curses.curs_set(0)
-
-	# keystrokes are honored immediately, rather than waiting for the
-	# user to hit Enter
-	curses.cbreak()
-	# start color display (if it exists; could check with has_colors())
-	curses.start_color()
-	# set up a foreground/background color pair that we'll use for indicating selection
-	curses.init_pair(curses.COLOR_WHITE,curses.COLOR_WHITE, curses.COLOR_BLACK)
-	curses.init_pair(curses.COLOR_RED,curses.COLOR_RED,curses.COLOR_BLACK)
-	curses.init_pair(curses.COLOR_GREEN, curses.COLOR_GREEN, curses.COLOR_BLACK)
-	curses.init_pair(curses.COLOR_BLUE, curses.COLOR_BLUE, curses.COLOR_BLACK)
-	# clear screen
-	mapScreen.clear()
-	mapScreen.refresh()
-	return mapScreen
 
 #Our statsWindow function displays basic character stats in a box of the size and at
 #the location of the player's choice.
