@@ -974,15 +974,20 @@ def statsWindow(y, x, height, width, screen):
 
 	#player hp
 	screen.addstr(y + 2, x, "hp:")
+
+	#Figure out how long the health bar is
+	healthBarLength = ((player.currentHp * 10)/player.maxHp)
 	#hp bar
-	hColoredLine(y + 2, x + 3, '=', 10, curses.color_pair(curses.COLOR_GREEN), screen)
+	hColoredLine(y + 2, x + 3, '=', healthBarLength, curses.color_pair(curses.COLOR_GREEN), screen)
 	#display current hp/max hp
 	screen.addstr(y + 2, x + 14, str(player.currentHp) + "/" + str(player.maxHp))
 	
+	#Figure out how long the mana bar is
+	manaBarLength = ((player.currentMp * 10)/player.maxMp)
 	#player mp
 	screen.addstr(y + 3, x, "mp:")
 	#mp bar
-	hColoredLine(y + 3, x + 3, '=', 10, curses.color_pair(curses.COLOR_BLUE), screen)
+	hColoredLine(y + 3, x + 3, '=', manaBarLength, curses.color_pair(curses.COLOR_BLUE), screen)
 	#display current mp/max mp
 	screen.addstr(y + 3, x + 14, str(player.currentMp) + "/" + str(player.maxMp))
 	
