@@ -560,5 +560,11 @@ def drawLog(y, x, screen):
 def log(message):
 	logRecord.append(message)
 
+#This grabs the current dungeon from main.py,
+#it's basically an artifact of breaking the code up
+#into modules, and it lets the player traverse levels
+#within its own methods
+#parameters: 	an array of levels
+#returns: 		nothing
 def updateDungeon(newDungeon):
 	dungeon.extend(newDungeon)
