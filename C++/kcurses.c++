@@ -4,11 +4,6 @@
 //Description: These are the functions I've written for management of the
 //curses library (and translated into C++)
 /////////////////////////////////////////////////////////////////////////////
-#include <iostream>
-#include <ncurses.h>
-#include <stdlib.h>
-#include <string.h>
-
 
 /*
 initialize color pairs so that the curses code refers to the color pair: 
@@ -110,7 +105,7 @@ int hColoredLine(int y, int x, char character, int num, int color){
 /*
 The main function is a temporary placeholder that shows a basic example
 of each function defined here
-*/
+
 int main(){
 	initCurses();
 	drawBox(1, 1, 3, 3);
@@ -118,4 +113,4 @@ int main(){
 	getch();
 	cursesCleanup();
 	return 0;
-}
+}*/
