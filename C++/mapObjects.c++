@@ -1,25 +1,3 @@
-#include <iostream>
-
-string rawMap = "e e e # # # # e e e e e e e e e e e e e e e e e # # # e e e e e e e e e e e e e e e \n"
-				"e e e # . . # # # # # # # # # # # # e e e e e e # . # e e e e e e e e e e e e e e e \n"
-				"e e e # . # # . . . . . . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e \n"
-				"e e e # . # # . # # # # . # # # . # # # # # # # # . # # # # # # # # # # # # # # # # \n"
-				"e e e # . # # . # e e # . # # # . . . . . . . . . . . . . . . . . . . . . . . . . # \n"
-				"e e e # . # # . # e e # . . . . . # # # # # # # # . # # # # # # # # # # # # # # # # \n"
-				"e e e # . . > . # # # # % # # # # # e e e e e e # . # e e e e e e e e e e e e e e e \n"
-				"e e e # # # # # # # @ . . # e e e e e e e e e e # . # e e e e e e e e e e e e e e e \n"
-				"e e e e e e e e e # . # # # e e e e e e e e e e # . # e e e e e e e e e e e e e e e \n"
-				"e e e # # # e e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e \n"
-				"e e e # . # # e e # g # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e \n"
-				"e e e # . . # # # # . # # # # # # # # # # # # # # . # e e e e e e e e e e e e e e e \n"
-				"e e e # . # # . . . . . . . . . . . < . . . . . . . # e e e e e e e e e e e e e e e \n"
-				"e e e # . # # . # # # # . # # # . # # # # # # # # . # e e e e e e e e e e e e e e e \n"
-				"e e e # . # # . # e e # . # # # . # e e e e e e # . # e e e e e e e e e e e e e e e \n"
-				"e e e # . # # . # e e # . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e \n"
-				"e e e # . . . . # # # # . # # # # # e e e e e e # . # e e e e e e e e e e e e e e e \n"
-				"e e e # # # # # # # . . . # e e e e e e e e e e # . # e e e e e e e e e e e e e e e \n"
-				"e e e e e e e e e # . # # # e e e e e e e e e e # . # e e e e e e e e e e e e e e e \n"
-				"e e e e e e e e e # # # e e e e e e e e e e e e # # # e e e e e e e e e e e e e e e \n";
 
 Terrain::Terrain (char type){
 	symbol = type;
@@ -32,16 +10,15 @@ Terrain::Terrain (char type){
 //when we initialize the tile we give it that type
 Tile::Tile(char c, int y, int x){
 		terrain = Terrain(c);
-		character = NULL;
+		character = NullCharacter();
 		switch(c){
 			case '@':
 				player = Player(y, x);
-				character = &player;
+				character = player;
 				terrain = Terrain('.');
 				break;
 			case 'g':
-				Character characterObject = SpaceGoblin(y, x);
-				character = &characterObject;
+				character = SpaceGoblin(y, x);
 				terrain = Terrain('.');
 				break; 
 		}
@@ -55,8 +32,8 @@ Tile::Tile(char c, int y, int x){
 char Tile::printTile(void){
 	if(terrain.symbol == 'e')
 		return ' ';
-	if(character != NULL)
-		return character->symbol;
+	if(character.symbol != ' ')
+		return character.symbol;
 	return terrain.symbol;
 	
 }

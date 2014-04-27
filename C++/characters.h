@@ -26,6 +26,10 @@ struct Character{
 	int attack(Character*);
 };
 
+struct NullCharacter: Character{
+	NullCharacter(void);
+};
+
 struct Player: Character{
 	//The player has experience points
 	int xp;

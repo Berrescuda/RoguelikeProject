@@ -10,12 +10,19 @@
 using namespace std;
 
 int Character::move(int y, int x){
-	if(currentLevel->levelMap[yPos + y][xPos + x].terrain.passable){
-		currentLevel->levelMap[yPos][xPos].character = NULL;
+	Tile targetTile = currentLevel->levelMap[yPos + y][xPos + x];
+	if(targetTile.terrain.passable && targetTile.character.symbol == ' '){
+		currentLevel->levelMap[yPos][xPos].character = NullCharacter();
 		yPos += y;
 		xPos += x;
-		currentLevel->levelMap[yPos][xPos].character = this;
+		//const Character ourGuy = *this;
+		currentLevel->levelMap[yPos][xPos].character = *this;
 	}
+}
+
+NullCharacter::NullCharacter(void){
+	symbol = ' ';
+	name = "NULL";
 }
 
 Player::Player (int y, int x){
