@@ -6,19 +6,27 @@
 #include <list>
 using namespace std;
 
+#include "characters.h"
 #include "characters.c++"
 
 Player player(0, 0);
+
 
 #include "mapObjects.c++"
 #include "kcurses.c++"
 #include "display.c++"
 
 int main(){
+	char c;
 	initCurses();
 	Level levelOne = Level(rawMap);
+	player.currentLevel = &levelOne;
+	while(c != 'q'){
 	mainDisplay(levelOne);
-	getch();
+	c = getch();
+	player.takeTurn(c);
+	}
+
 	cursesCleanup();
-	std:: cout << player.xPos << endl;
+	cout << player.currentLevel->levelMap[5][5].printTile() << endl;
 }

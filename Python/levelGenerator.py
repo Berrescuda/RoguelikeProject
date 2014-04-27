@@ -25,7 +25,7 @@ class Room:
 	#to the rest of the dungeon
 	connected = False
 
-	#when a room is initialize, it's dimensions are randomized and placed 
+	#when a room is initialized, it's dimensions are randomized and placed 
 	#somewhere randomly on the map, with a random width and height
 	#Then the room is "drawn" on the map
 	#parameters: 	width and height of the map we're drawing, 

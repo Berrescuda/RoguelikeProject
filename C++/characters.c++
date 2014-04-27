@@ -7,55 +7,7 @@
 //When more monsters are added to the game, they will be added here
 //as classes that inherit from the "Monster" class
 ////////////////////////////////////////////////////////////////////////////
-
-#include <iostream>
-#include <ncurses.h>
 using namespace std;
-
-
-//the Character class describes any living entity in the dungeon.
-//(for now that only means monsters and the player)
-struct Character{
-	//Max Hp
-	int maxHp;
-	//Current Hp
-	int currentHp;
-	//Character's Name
-	const char* name;
-	//Character Symbol
-	char symbol;
-	//Color the Symbol will display
-	int color;
-	//A quick flag to determine if the character is our PC
-	bool isPlayer;
-	//The character's position on the x axis
-	int xPos;
-	//The character's position on the y axis
-	int yPos;
-	//The amount of damage the character deals in combat
-	int power;
-
-	int attack(Character* target){
-		cout << name << " attacks " << target->name << endl;
-		target->currentHp -= power;
-	}
-};
-
-struct NullCharacter: Character{
-	NullCharacter(void);
-};
-
-NullCharacter::NullCharacter(void){
-	symbol = ' ';
-	name = "NULL";
-}
-
-struct Player: Character{
-	//The player has experience points
-	int xp;
-
-	Player (int, int);
-};
 
 Player::Player (int y, int x){
 	//Set up our player initializer
@@ -89,7 +41,6 @@ SpaceGoblin::SpaceGoblin(int y, int x){
 	isPlayer = false;
 	power = 1;
 }
-
 
 /*
 int main(){

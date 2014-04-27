@@ -33,7 +33,7 @@ struct Terrain : TerrainType{
 
 Terrain::Terrain (char type){
 	symbol = type;
-	if(symbol == '.')
+	if(symbol == '.' || symbol == '<' || symbol == '>')
 		passable = true;
 	else passable = false;
 }
@@ -45,7 +45,7 @@ struct Tile{
 	//This value will be manipulated by our pathfinding algorithm
 	int pathValue;
 	TerrainType terrain;
-	Character character;
+	Character* character;
 	Tile(char, int, int);
 
 
@@ -57,8 +57,8 @@ struct Tile{
 	char printTile(){
 		if(terrain.symbol == 'e')
 			return ' ';
-		if(character.symbol != ' ')
-			return character.symbol;
+		if(character != NULL)
+			return character->symbol;
 		return terrain.symbol;
 		
 	}
@@ -69,15 +69,16 @@ struct Tile{
 //when we initialize the tile we give it that type
 Tile::Tile(char c, int y, int x){
 		terrain = Terrain(c);
-		character = NullCharacter();
+		character = NULL;
 		switch(c){
 			case '@':
 				player = Player(y, x);
-				character = player;
+				character = &player;
 				terrain = Terrain('.');
 				break;
 			case 'g':
-				character = SpaceGoblin(y, x);
+				Character characterObject = SpaceGoblin(y, x);
+				character = &characterObject;
 				terrain = Terrain('.');
 				break; 
 		}
@@ -104,5 +105,14 @@ Level::Level(string map){
 		}
 		stringPos = x + 1;
 		levelMap.push_back(newVector);
+	}
+}
+
+int Character::move(int direction[2]){
+	if(currentLevel->levelMap[yPos + direction[0]][xPos + direction[1]].terrain.passable){
+		currentLevel->levelMap[yPos][xPos].character = NULL;
+		yPos += direction[0];
+		xPos += direction[1];
+		currentLevel->levelMap[yPos][xPos].character = this;
 	}
 }

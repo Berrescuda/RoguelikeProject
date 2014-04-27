@@ -6,58 +6,26 @@
 //(UI stuff)
 ///////////////////////////////////////////////////////////////////////////
 
-int drawMap(Player player){
+int drawMap(Level level){
 	int levelWidth = 36;
 	int levelHeight = 18;
 	int i, j;
-	char levelMap[18][18] = {
-		{'#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#'},
-		{'#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#'},
-		{'#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#'},
-		{'#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#'},
-		{'#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#'},
-		{'#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#'},
-		{'#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#'},
-		{'#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#'},
-		{'#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#'},
-		{'#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#'},
-		{'#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#'},
-		{'#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#'},
-		{'#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#'},
-		{'#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#'},
-		{'#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#'},
-		{'#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#'},
-		{'#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#'},
-		{'#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#'},		
-	};
-	//We start in the center of the screen and work outwards from there.
-	int y = 9;
+	vector<vector<Tile> > levelMap = level.levelMap;
 	//We go down the map row by row
-	for(i = 1; i < levelHeight; i++){
-		//We initialize X here because we start at the center of the screen,
-		//but for asthetic reasons, every in game x coordinate is two spaces
-		//as far as curses is concerned
-		int x = 9;
-		//Make sure we don't collide with the edges of the map and try to draw
-		//things that aren't there.
-		//if (y - player.yPos > 0 && y - player.yPos < levelHeight){
-			//Iterate over every square on the row
-			for(j = 1; j < 18; j++){
+	for(i = player.yPos - 8; i <= player.yPos + 8; i++){
+		//make sure the row we're about to print exists
+		if (0 < i && i < levelMap.size()){
+			for(j = player.xPos - 8; j <= player.xPos + 8; j++){
 				//Get the information about how to display that square
 //char squareDisplay = levelMap[i][j].printTile()
 				//Make sure we're not going to collide with either side of our window
-		//		if (x - player.xPos > 0 and (x * 2) - (player.xPos * 2) < levelWidth){
+				if (0 < j && j < levelMap[i].size()){
 					//Print the current square to the screen
-					mvaddch(i, j * 2, levelMap[i][j]);
-		//			mvaddch(y - player.yPos, (x * 2) - (player.xPos * 2), levelMap[i][j]);
-				//}
-				//Next square
-				x++;
-			//}
+					mvaddch(i - player.yPos + 9, (j - player.xPos) * 2 + 18, levelMap[i][j].printTile());
+				}
+			}
 		}
 	}
-	//next row
-	y++;
 }
 /*
 */
@@ -101,28 +69,24 @@ int drawStatsWindow(int y, int x, int height, int width, const char* name){
 //our mainDisplay function is where our primary in game curses calls take place
 //paramaters: none
 //returns: nothing
-int mainDisplay(){
-	int levelHeight = 18;
-	int levelWidth = 36;
+int mainDisplay(Level level){
+	int boxHeight = 18;
+	int boxWidth = 36;
 	//clear the screen of any leftover residue
 	clear();
 
 	//Draw a box around the map screen
-	drawBox(0, 0, levelHeight, levelWidth);
+	drawBox(0, 0, boxHeight, boxWidth);
 
 	//draw a box around our output zone
-	drawBox(levelHeight + 1, 0, 4, levelWidth);
+	drawBox(boxHeight + 1, 0, 4, boxWidth);
 
 	//characters.drawLog(levelHeight + 2, 1, screen)
 
 	//draw our stats display window:
-	drawStatsWindow(0, levelWidth + 1, levelHeight, 23, "foobar");
+	drawStatsWindow(0, boxWidth + 1, boxHeight, 23, "foobar");
 
-	Player player;
-	player.xPos = 9;
-	player.yPos = 9;
-
-	drawMap(player);
+	drawMap(level);
 
 	//Refresh the screen so the changes will take effect
 	refresh();
