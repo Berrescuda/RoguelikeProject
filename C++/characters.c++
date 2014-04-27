@@ -9,6 +9,15 @@
 ////////////////////////////////////////////////////////////////////////////
 using namespace std;
 
+int Character::move(int y, int x){
+	if(currentLevel->levelMap[yPos + y][xPos + x].terrain.passable){
+		currentLevel->levelMap[yPos][xPos].character = NULL;
+		yPos += y;
+		xPos += x;
+		currentLevel->levelMap[yPos][xPos].character = this;
+	}
+}
+
 Player::Player (int y, int x){
 	//Set up our player initializer
 	maxHp = 10;
@@ -22,13 +31,60 @@ Player::Player (int y, int x){
 	yPos = y;
 }
 
-struct Monster: Character{
+void Player::takeTurn(char c){
+		bool passTurn = false;
 
-};
+		int direction[2] = {0, 0};
 
-struct SpaceGoblin: Monster{
-	SpaceGoblin(int, int);
-};
+		switch(c){
+			case 56:
+			case 'w':
+				direction[0] = -1;
+				break;
+
+			case 50:
+			case 's':
+				direction[0] = 1;
+				break;
+
+			case 52:
+			case 'a':
+				direction[1] = -1;
+				break;
+
+			case 54:
+			case 'd':
+				direction[1] = 1;
+				break;
+
+			case 49:
+				direction[0] = 1;
+				direction[1] = -1;
+				break;
+			case 51:
+				direction[0] = 1;
+				direction[1] = 1;
+				break;
+
+			case 55:
+				direction[0] = -1;
+				direction[1] = -1;
+				break;
+
+			case 57:
+				direction[0] = -1;
+				direction[1] = 1;
+				break;
+
+			case 53:
+				passTurn = true;
+		}
+		if(direction[0] != 0 || direction[1] != 0){
+			move(direction[0], direction[1]);
+			passTurn = true;
+		}
+	}
+
 
 SpaceGoblin::SpaceGoblin(int y, int x){
 	xPos = x;
@@ -41,21 +97,3 @@ SpaceGoblin::SpaceGoblin(int y, int x){
 	isPlayer = false;
 	power = 1;
 }
-
-/*
-int main(){
-	//Initialize the player
-	Player pc;
-	
-	Player monster;
-
-	monster.name = "monster";
-
-	pc.attack(&monster);
-	//Print the player's name
-	cout << monster.currentHp << endl;
-	//Print the player's color
-	cout << pc.color << endl;
-	return 0;
-}
-*/

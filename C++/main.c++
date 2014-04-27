@@ -6,9 +6,9 @@
 #include <list>
 using namespace std;
 
-#include "characters.h"
-#include "characters.c++"
+#include "headers.h"
 
+#include "characters.c++"
 Player player(0, 0);
 
 

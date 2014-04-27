@@ -1,10 +1,3 @@
-struct Character;
-struct Player;
-struct Monster;
-struct SpaceGoblin;
-
-struct Level;
-
 //the Character class describes any living entity in the dungeon.
 //(for now that only means monsters and the player)
 struct Character{
@@ -29,8 +22,8 @@ struct Character{
 
 	Level* currentLevel;
 
-	int move(int*);
-	int attack(Character*)
+	int move(int, int);
+	int attack(Character*);
 };
 
 struct Player: Character{
@@ -39,57 +32,13 @@ struct Player: Character{
 
 	Player (int, int);
 
-	void takeTurn(char c){
-		bool passTurn = false;
+	void takeTurn(char);
+};
 
-		int direction[2] = {0, 0};
+struct Monster: Character{
 
-		switch(c){
-			case 56:
-			case 'w':
-				direction[0] = -1;
-				break;
+};
 
-			case 50:
-			case 's':
-				direction[0] = 1;
-				break;
-
-			case 52:
-			case 'a':
-				direction[1] = -1;
-				break;
-
-			case 54:
-			case 'd':
-				direction[1] = 1;
-				break;
-
-			case 49:
-				direction[0] = 1;
-				direction[1] = -1;
-				break;
-			case 51:
-				direction[0] = 1;
-				direction[1] = 1;
-				break;
-
-			case 55:
-				direction[0] = -1;
-				direction[1] = -1;
-				break;
-
-			case 57:
-				direction[0] = -1;
-				direction[1] = 1;
-				break;
-
-			case 53:
-				passTurn = true;
-		}
-		if(direction[0] != 0 || direction[1] != 0){
-			move(direction);
-			passTurn = true;
-		}
-	}
+struct SpaceGoblin: Monster{
+	SpaceGoblin(int, int);
 };
