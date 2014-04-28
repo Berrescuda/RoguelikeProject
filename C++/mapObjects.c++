@@ -8,7 +8,7 @@ Terrain::Terrain (char type){
 
 //our initialization function takes a terrain type,
 //when we initialize the tile we give it that type
-Tile::Tile(char c, int y, int x){
+Tile::Tile(char c, int y, int x, Level* level){
 		terrain = Terrain(c);
 		character = NullCharacter();
 		switch(c){
@@ -18,7 +18,7 @@ Tile::Tile(char c, int y, int x){
 				terrain = Terrain('.');
 				break;
 			case 'g':
-				character = SpaceGoblin(y, x);
+				character = SpaceGoblin(y, x, level);
 				terrain = Terrain('.');
 				break; 
 		}
@@ -39,6 +39,7 @@ char Tile::printTile(void){
 }
 
 Level::Level(string map){
+	level = 1;
 	int stringPos, y, x;
 	bool passable;
 	stringPos = 0;
@@ -46,7 +47,7 @@ Level::Level(string map){
 		vector<Tile> newVector;
 		for(x = stringPos; map[x] != '\n'; x++){
 			if(map[x] != ' ')
-				newVector.push_back(Tile(map[x], y, (x - stringPos)/2));
+				newVector.push_back(Tile(map[x], y, (x - stringPos)/2, this));
 		}
 		stringPos = x + 1;
 		levelMap.push_back(newVector);

@@ -18,7 +18,7 @@ struct Tile{
 	int pathValue;
 	TerrainType terrain;
 	Character character;
-	Tile(char, int, int);
+	Tile(char, int, int, Level*);
 	char printTile(void);
 
 };
@@ -26,6 +26,7 @@ struct Tile{
 struct Level{
 	vector<vector <Tile> > levelMap;
 	list<Character> characters;
+	int level;
 
 	Level(string map);
 

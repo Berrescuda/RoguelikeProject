@@ -10,14 +10,32 @@
 using namespace std;
 
 int Character::move(int y, int x){
-	Tile targetTile = currentLevel->levelMap[yPos + y][xPos + x];
-	if(targetTile.terrain.passable && targetTile.character.symbol == ' '){
-		currentLevel->levelMap[yPos][xPos].character = NullCharacter();
-		yPos += y;
-		xPos += x;
-		//const Character ourGuy = *this;
-		currentLevel->levelMap[yPos][xPos].character = *this;
+	Tile* targetTile = &currentLevel->levelMap[yPos + y][xPos + x];
+	if(targetTile->character.symbol != ' '){
+		attack(&targetTile->character);
+	} else {
+		if(targetTile->terrain.passable){
+			currentLevel->levelMap[yPos][xPos].character = NullCharacter();
+			yPos += y;
+			xPos += x;
+			currentLevel->levelMap[yPos][xPos].character = *this;
+		}
 	}
+}
+
+void Character::attack(Character* target){
+	log("you attack the " + target->name);
+	target->currentHp -= power;
+	log("hp = " + to_string(target->currentHp));
+	if(target->currentHp < 1){
+		target->die();
+	}
+}
+
+void Character::die(void){
+	currentLevel->levelMap[yPos][xPos].character = NullCharacter();
+	xPos = 0;
+	yPos = 0;
 }
 
 NullCharacter::NullCharacter(void){
@@ -36,6 +54,7 @@ Player::Player (int y, int x){
 	power = 1;
 	xPos = x;
 	yPos = y;
+	//currentLevel = level;
 }
 
 void Player::takeTurn(char c){
@@ -93,7 +112,7 @@ void Player::takeTurn(char c){
 	}
 
 
-SpaceGoblin::SpaceGoblin(int y, int x){
+SpaceGoblin::SpaceGoblin(int y, int x, Level* level){
 	xPos = x;
 	yPos = y;
 	maxHp = 5;
@@ -103,4 +122,5 @@ SpaceGoblin::SpaceGoblin(int y, int x){
 	color = COLOR_RED;
 	isPlayer = false;
 	power = 1;
+	currentLevel = level;
 }

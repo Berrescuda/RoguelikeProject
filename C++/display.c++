@@ -66,6 +66,21 @@ int drawStatsWindow(int y, int x, int height, int width, const char* name){
 	*/
 }
 
+void drawLogWindow(int y, int x, int height, int width){
+	//draw a box around our display zone
+	drawBox(y, x, height, width);
+	for(int i = 0; i < 3 ; i++){
+		mvaddstr(y + 3 - i, x + 1, gameLog[i].c_str());
+	}
+}
+
+
+void log(string message){
+	string input;
+	input = message;
+	gameLog.push_front(input);
+}
+
 //our mainDisplay function is where our primary in game curses calls take place
 //paramaters: none
 //returns: nothing
@@ -78,8 +93,7 @@ int mainDisplay(Level level){
 	//Draw a box around the map screen
 	drawBox(0, 0, boxHeight, boxWidth);
 
-	//draw a box around our output zone
-	drawBox(boxHeight + 1, 0, 4, boxWidth);
+	drawLogWindow(boxHeight + 1, 0, 4, boxWidth);
 
 	//characters.drawLog(levelHeight + 2, 1, screen)
 

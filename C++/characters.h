@@ -23,7 +23,8 @@ struct Character{
 	Level* currentLevel;
 
 	int move(int, int);
-	int attack(Character*);
+	void attack(Character*);
+	void die(void);
 };
 
 struct NullCharacter: Character{
@@ -44,5 +45,5 @@ struct Monster: Character{
 };
 
 struct SpaceGoblin: Monster{
-	SpaceGoblin(int, int);
+	SpaceGoblin(int, int, Level*);
 };
