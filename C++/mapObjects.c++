@@ -29,12 +29,12 @@ Tile::Tile(char c, int y, int x, Level* level){
 //our printTile function returns those values
 //paramaters: None
 //returns: the symbol of the tile
-char Tile::printTile(void){
+TileDisplayData Tile::printTile(void){
 	if(terrain.symbol == 'e')
-		return ' ';
+		return TileDisplayData{0, ' '};
 	if(character.symbol != ' ')
-		return character.symbol;
-	return terrain.symbol;
+		return TileDisplayData{character.color, character.symbol};
+	return TileDisplayData{0, terrain.symbol};
 	
 }
 

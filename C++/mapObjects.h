@@ -8,7 +8,10 @@ struct Terrain : TerrainType{
 	Terrain(char);
 };
 
-
+struct TileDisplayData{
+	int color;
+	char symbol;
+};
 
 struct Tile{
 	bool visible;
@@ -19,7 +22,7 @@ struct Tile{
 	TerrainType terrain;
 	Character character;
 	Tile(char, int, int, Level*);
-	char printTile(void);
+	TileDisplayData printTile(void);
 
 };
 

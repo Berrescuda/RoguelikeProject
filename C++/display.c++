@@ -16,12 +16,14 @@ int drawMap(Level level){
 		//make sure the row we're about to print exists
 		if (0 < i && i < levelMap.size()){
 			for(j = player.xPos - 8; j <= player.xPos + 8; j++){
-				//Get the information about how to display that square
-//char squareDisplay = levelMap[i][j].printTile()
 				//Make sure we're not going to collide with either side of our window
 				if (0 < j && j < levelMap[i].size()){
+					//Get the information about how to display that square
+					TileDisplayData squareDisplay = levelMap[i][j].printTile();
 					//Print the current square to the screen
-					mvaddch(i - player.yPos + 9, (j - player.xPos) * 2 + 18, levelMap[i][j].printTile());
+					attron(COLOR_PAIR(squareDisplay.color));
+					mvaddch(i - player.yPos + 9, (j - player.xPos) * 2 + 18, squareDisplay.symbol);
+					attroff(COLOR_PAIR(squareDisplay.color));
 				}
 			}
 		}
