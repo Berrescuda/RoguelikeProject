@@ -42,7 +42,9 @@ struct Player: Character{
 };
 
 struct Monster: Character{
-	stack <int[2]> path;
+	stack <Tuple> path;
+	stack <int> dork;
+	void findPath(Tile*);
 };
 
 struct SpaceGoblin: Monster{

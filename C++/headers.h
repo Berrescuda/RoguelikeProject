@@ -1,3 +1,8 @@
+struct Tuple{
+	int y;
+	int x;
+};
+
 struct Character;
 struct Level;
 struct Tile;
