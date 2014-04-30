@@ -20,11 +20,14 @@ struct Character{
 	//The amount of damage the character deals in combat
 	int power;
 
+	int xp;
+
 	Level* currentLevel;
 
 	int move(int, int);
 	void attack(Character*);
-	void die(void);
+	void die(Character*);
+	Tile* getTile(void);
 };
 
 struct NullCharacter: Character{
@@ -32,8 +35,6 @@ struct NullCharacter: Character{
 };
 
 struct Player: Character{
-	//The player has experience points
-	int xp;
 
 	Player (int, int);
 
@@ -41,7 +42,7 @@ struct Player: Character{
 };
 
 struct Monster: Character{
-
+	stack <int[2]> path;
 };
 
 struct SpaceGoblin: Monster{

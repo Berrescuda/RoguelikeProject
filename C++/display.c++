@@ -55,7 +55,9 @@ int drawStatsWindow(int y, int x, int height, int width, const char* name){
 	mvaddstr(y + 2, x + 14, "10/10");
 	
 	//print player XP
-	mvaddstr(y + 4, x, "XP:0");
+	mvaddstr(y + 4, x, "XP:");
+	string xp = to_string(player.xp);
+	mvaddstr(y + 4, x + 4, xp.c_str());
 
 	//Print the current level of the dungeon the player is on
 	mvaddstr(y + 5, x, "Current Level: 1");

@@ -19,10 +19,16 @@ struct Tile{
 
 	//This value will be manipulated by our pathfinding algorithm
 	int pathValue;
+	int xPos;
+	int yPos;
+
 	TerrainType terrain;
 	Character character;
+	Level *currentLevel;
+
 	Tile(char, int, int, Level*);
 	TileDisplayData printTile(void);
+	list <Tile*> listAdjacentTiles();
 
 };
 
@@ -32,6 +38,7 @@ struct Level{
 	int level;
 
 	Level(string map);
+	void clearTileValues();
 
 };
 

@@ -5,6 +5,7 @@
 #include <vector>
 #include <deque>
 #include <list>
+#include <stack>
 using namespace std;
 
 deque <string> gameLog;
@@ -32,7 +33,15 @@ int main(){
 	}
 
 	cursesCleanup();
-	for(int i = 0; i < gameLog.size(); i++)
-		cout << gameLog[i] << endl;
-	//cout << levelOne.levelMap[10][10].character.currentLevel->level << endl;
+	list <Tile*> adjTiles(levelOne.levelMap[10][10].listAdjacentTiles());
+	list<Tile*>::iterator tile;
+	tile = adjTiles.begin();
+	while(tile != adjTiles.end()){
+		cout << (*tile)->xPos << ' ' << (*tile)->yPos << endl;
+		*tile++;
+	}
+	
+	//SpaceGoblin* goblin = static_cast <SpaceGoblin*>(&levelOne.levelMap[10][10].character);
+	//goblin->findPath(player.getTile());
+	//levelOne.levelMap[10][10].listAdjacentTiles();
 }
