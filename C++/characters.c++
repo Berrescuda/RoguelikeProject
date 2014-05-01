@@ -84,12 +84,8 @@ void Character::die(Character* killer){
 void Monster::die(Character* killer){
 	log(name + " dies");
 	
-	/*for(int i = 1; i < currentLevel->monsters.size(); i++){
-		if(this == currentLevel->monsters[i]){
-			currentLevel->monsters[i] = NULL;
-			break;
-		}
-	}*/
+	if(getId())
+		currentLevel->monsters[getId()] = NULL;
 
 	Tile* currentTile = getTile();
 	currentTile->character = NULL;
@@ -102,6 +98,16 @@ void Monster::die(Character* killer){
 
 Tile* Character::getTile(void){
 	return &currentLevel->levelMap[yPos][xPos];
+}
+
+int Monster::getId(void){
+	
+	for(int i = 0; i < currentLevel->monsters.size(); i++)
+		if(currentLevel->monsters[i] == this)
+			return i;
+
+	return NULL;
+
 }
 
 bool Player::takeTurn(char c){

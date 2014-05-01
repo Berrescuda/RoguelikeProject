@@ -46,6 +46,7 @@ struct Monster: Character{
 	stack <Tuple> findPath(Tile*);
 	void takeTurn(Character);
 	void die(Character*);
+	int getId(void);
 	bool alive;
 };
 

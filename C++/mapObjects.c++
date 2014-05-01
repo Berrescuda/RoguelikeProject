@@ -24,6 +24,7 @@ Tile::Tile(char c, int y, int x, Level* level){
 				SpaceGoblin newMonster = SpaceGoblin(y, x, level);
 				character = new SpaceGoblin;
 				*character = newMonster;
+				currentLevel->monsters.push_back(character);
 				terrain = Terrain('.');
 				break; 
 		}
@@ -50,10 +51,6 @@ Level::Level(string map){
 		stringPos = x + 1;
 		levelMap.push_back(newVector);
 	}
-	for(int i = 0; i < levelMap.size(); i ++)
-		for(int j = 0; j <levelMap[i].size(); j++)
-			if(levelMap[i][j].character != NULL && levelMap[i][j].character->symbol != '@')
-				monsters.push_back(levelMap[i][j].character);
 }
 
 //when we want to print our tile, generally we want to know what 
@@ -126,13 +123,12 @@ void Level::processTurn(){
 		mainDisplay(*this);
 		c = getch();
 		if (player.takeTurn(c)){
-			log("turn");
-			//for(int i = 1; i < monsters.size(); i++){
-							
-			
-			//	if(monsters[i]->name != "NULL")
-			//		monsters[i]->takeTurn(player);
-			//}
+			for(int i = 1; i < monsters.size(); i++){			
+				if(monsters[i] != NULL){
+					monsters[i]->takeTurn(player);
+					log("goblin" + to_string(monsters[i]->getId()) + " takes a turn");
+				}
+			}
 
 		}
 	}

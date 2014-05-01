@@ -46,7 +46,7 @@ string rawMap = "e e e # # # # e e e e e e e e e e e e e e e e e # # # e e e e e
 				"e e e # . . # # # # # # # # # # # # e e e e e e # . # e e e e e e e e e e e e e e e \n"
 				"e e e # . # # . . . . . . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e \n"
 				"e e e # . # # . # # # # . # # # . # # # # # # # # . # # # # # # # # # # # # # # # # \n"
-				"e e e # . # # . # e e # . # # # . . . . . . . . . g . . . . . . . . . . . . . . . # \n"
+				"e e e # . # # . # e e # . # # # . . . . . . . . . . . . . . . . . . . . . . . . . # \n"
 				"e e e # . # # . # e e # . . . . . # # # # # # # # . # # # # # # # # # # # # # # # # \n"
 				"e e e # . . > . # # # # . # # # # # e e e e e e # . # e e e e e e e e e e e e e e e \n"
 				"e e e # # # # # # # @ . . # e e e e e e e e e e # . # e e e e e e e e e e e e e e e \n"
