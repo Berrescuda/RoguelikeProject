@@ -13,15 +13,17 @@ Tile::Tile(char c, int y, int x, Level* level){
 		xPos = x;
 		yPos = y;
 		terrain = Terrain(c);
-		character = NullCharacter();
+		character = NULL;
 		switch(c){
 			case '@':
 				player = Player(y, x);
-				character = player;
+				character = &player;
 				terrain = Terrain('.');
 				break;
 			case 'g':
-				character = SpaceGoblin(y, x, level);
+				SpaceGoblin newMonster = SpaceGoblin(y, x, level);
+				character = new SpaceGoblin;
+				*character = newMonster;
 				terrain = Terrain('.');
 				break; 
 		}
@@ -50,8 +52,8 @@ Level::Level(string map){
 	}
 	for(int i = 0; i < levelMap.size(); i ++)
 		for(int j = 0; j <levelMap[i].size(); j++)
-			if(levelMap[i][j].character.symbol != ' ' && levelMap[i][j].character.symbol != '@')
-				monsters.push_back(&levelMap[i][j].character);
+			if(levelMap[i][j].character != NULL && levelMap[i][j].character->symbol != '@')
+				monsters.push_back(levelMap[i][j].character);
 }
 
 //when we want to print our tile, generally we want to know what 
@@ -62,8 +64,8 @@ Level::Level(string map){
 TileDisplayData Tile::printTile(void){
 	if(terrain.symbol == 'e')
 		return TileDisplayData{0, ' '};
-	if(character.symbol != ' ')
-		return TileDisplayData{character.color, character.symbol};
+	if(character != NULL)
+		return TileDisplayData{character->color, character->symbol};
 	return TileDisplayData{0, terrain.symbol};
 	
 }
@@ -125,12 +127,12 @@ void Level::processTurn(){
 		c = getch();
 		if (player.takeTurn(c)){
 			log("turn");
-			for(int i = 1; i < monsters.size(); i++){
+			//for(int i = 1; i < monsters.size(); i++){
 							
 			
-				if(monsters[i] != NULL)
-					monsters[i]->takeTurn(player);
-			}
+			//	if(monsters[i]->name != "NULL")
+			//		monsters[i]->takeTurn(player);
+			//}
 
 		}
 	}

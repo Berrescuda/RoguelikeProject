@@ -43,20 +43,22 @@ SpaceGoblin::SpaceGoblin(int y, int x, Level* level){
 	xp = 0;
 	stack<Tuple> path;
 	alive = true;
-	path.push({1, 1});
 }
 
+SpaceGoblin::SpaceGoblin(){
+}
 
-int Character::move(int y, int x){
-	Tile* targetTile = &currentLevel->levelMap[yPos + y][xPos + x];
-	if(targetTile->character.symbol != ' '){
-		attack(&targetTile->character);
-	} else {
+int Character::move(Tuple direction){
+
+	Tile* targetTile = &currentLevel->levelMap[yPos + direction.y][xPos + direction.x];
+	if(targetTile->character != NULL){
+		attack(targetTile->character);
+	} else { 	
 		if(targetTile->terrain.passable){
-			currentLevel->levelMap[yPos][xPos].character = NullCharacter();
-			yPos += y;
-			xPos += x;
-			currentLevel->levelMap[yPos][xPos].character = *this;
+			currentLevel->levelMap[yPos][xPos].character = NULL;
+			yPos += direction.y;
+			xPos += direction.x;
+			currentLevel->levelMap[yPos][xPos].character = this;
 		}
 	}
 }
@@ -74,7 +76,7 @@ void Character::attack(Character* target){
 void Character::die(Character* killer){
 	log(name + " dies");
 	Tile* currentTile = getTile();
-	currentTile->character = NullCharacter();
+	currentTile->character = NULL;
 	xPos = 0;
 	yPos = 0;
 }
@@ -82,15 +84,15 @@ void Character::die(Character* killer){
 void Monster::die(Character* killer){
 	log(name + " dies");
 	
-	for(int i = 1; i < currentLevel->monsters.size(); i++){
+	/*for(int i = 1; i < currentLevel->monsters.size(); i++){
 		if(this == currentLevel->monsters[i]){
 			currentLevel->monsters[i] = NULL;
 			break;
 		}
-	}
+	}*/
 
 	Tile* currentTile = getTile();
-	currentTile->character = NullCharacter();
+	currentTile->character = NULL;
 
 	alive = false;
 	xPos = 0;
@@ -105,53 +107,53 @@ Tile* Character::getTile(void){
 bool Player::takeTurn(char c){
 		bool passTurn = false;
 
-		int direction[2] = {0, 0};
+		Tuple direction = {0, 0};
 
 		switch(c){
 			case 56:
 			case 'w':
-				direction[0] = -1;
+				direction.y = -1;
 				break;
 
 			case 50:
 			case 's':
-				direction[0] = 1;
+				direction.y = 1;
 				break;
 
 			case 52:
 			case 'a':
-				direction[1] = -1;
+				direction.x = -1;
 				break;
 
 			case 54:
 			case 'd':
-				direction[1] = 1;
+				direction.x = 1;
 				break;
 
 			case 49:
-				direction[0] = 1;
-				direction[1] = -1;
+				direction.y = 1;
+				direction.x = -1;
 				break;
 			case 51:
-				direction[0] = 1;
-				direction[1] = 1;
+				direction.y = 1;
+				direction.x = 1;
 				break;
 
 			case 55:
-				direction[0] = -1;
-				direction[1] = -1;
+				direction.y = -1;
+				direction.x = -1;
 				break;
 
 			case 57:
-				direction[0] = -1;
-				direction[1] = 1;
+				direction.y = -1;
+				direction.x = 1;
 				break;
 
 			case 53:
 				passTurn = true;
 		}
-		if(direction[0] != 0 || direction[1] != 0){
-			move(direction[0], direction[1]);
+		if(direction.y != 0 || direction.x != 0){
+			move(direction);
 			passTurn = true;
 		}
 	return passTurn;
@@ -225,7 +227,6 @@ stack<Tuple> Monster::findPath(Tile* target){
 		//While we haven't found the target tile, and there are still unexplored
 		//tiles left, iterate over them.
 		if (0 < unexploredTiles.size() && currentSquare != target){
-			cout<<unexploredTiles.size() << endl;
 			currentSquare = unexploredTiles.front();
 			unexploredTiles.pop_front();
 		}
@@ -268,5 +269,7 @@ stack<Tuple> Monster::findPath(Tile* target){
 }
 
 void Monster::takeTurn(Character target){
-	//findPath(target.getTile());
+	stack <Tuple> foundPath = findPath(target.getTile());
+	move(foundPath.top());
+	foundPath.pop();
 }

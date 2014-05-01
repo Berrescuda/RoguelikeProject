@@ -23,7 +23,7 @@ struct Tile{
 	int yPos;
 
 	TerrainType terrain;
-	Character character;
+	const Character* character;
 	Level *currentLevel;
 
 	Tile(char, int, int, Level*);

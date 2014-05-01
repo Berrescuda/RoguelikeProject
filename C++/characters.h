@@ -24,7 +24,7 @@ struct Character{
 
 	Level* currentLevel;
 
-	int move(int, int);
+	int move(Tuple);
 	void attack(Character*);
 	void die(Character*);
 	Tile* getTile(void);
@@ -51,4 +51,5 @@ struct Monster: Character{
 
 struct SpaceGoblin: Monster{
 	SpaceGoblin(int, int, Level*);
+	SpaceGoblin();
 };
