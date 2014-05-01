@@ -32,15 +32,26 @@ Level::Level(string map){
 	int stringPos, y, x;
 	bool passable;
 	stringPos = 0;
+
+	//the first element in the stack was causing the
+	//monster it referenced to act funny, so for now
+	//this hack is here to keep that from happening:
+	Monster* nullMonster;
+	monsters.push_back(nullMonster);
+
+
 	for(y = 0; map[stringPos] != '\0'; y++){
 		vector<Tile> newVector;
-		for(x = stringPos; map[x] != '\n'; x++){
+		for(x = stringPos; map[x] != '\n'; x++)
 			if(map[x] != ' ')
 				newVector.push_back(Tile(map[x], y, (x - stringPos)/2, this));
-		}
 		stringPos = x + 1;
 		levelMap.push_back(newVector);
 	}
+	for(int i = 0; i < levelMap.size(); i ++)
+		for(int j = 0; j <levelMap[i].size(); j++)
+			if(levelMap[i][j].character.symbol != ' ' && levelMap[i][j].character.symbol != '@')
+				monsters.push_back(&levelMap[i][j].character);
 }
 
 //when we want to print our tile, generally we want to know what 
@@ -68,11 +79,11 @@ void Level::clearTileValues(){
 	//calling the function
 	//Parameters: 	A map of the level.
 	//Returns: 		A list of adjacent tiles
-	list <Tile*> Tile::listAdjacentTiles(){
+	vector <Tile*> Tile::listAdjacentTiles(void){
 		int x = xPos;
 		int y = yPos;
-		//Initialize our new list
-		list <Tile*> adjacentTiles;
+		//Initialize our new vector
+		vector <Tile*> adjacentTiles;
 
 		//If there is a tile above us, add it to the list.
 		if(y > 0)
@@ -106,3 +117,21 @@ void Level::clearTileValues(){
 		//Return our list
 		return adjacentTiles;
 	}
+
+void Level::processTurn(){
+	char c;
+	while(c != 'q'){
+		mainDisplay(*this);
+		c = getch();
+		if (player.takeTurn(c)){
+			log("turn");
+			for(int i = 1; i < monsters.size(); i++){
+							
+			
+				if(monsters[i] != NULL)
+					monsters[i]->takeTurn(player);
+			}
+
+		}
+	}
+}

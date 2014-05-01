@@ -28,33 +28,33 @@ struct Tile{
 
 	Tile(char, int, int, Level*);
 	TileDisplayData printTile(void);
-	list <Tile*> listAdjacentTiles();
+	vector <Tile*> listAdjacentTiles(void);
 
 };
 
 struct Level{
 	vector<vector <Tile> > levelMap;
-	list<Character> characters;
+	vector<Monster*> monsters;
 	int level;
 
 	Level(string map);
 	void clearTileValues();
-
+	void processTurn();
 };
 
 string rawMap = "e e e # # # # e e e e e e e e e e e e e e e e e # # # e e e e e e e e e e e e e e e \n"
 				"e e e # . . # # # # # # # # # # # # e e e e e e # . # e e e e e e e e e e e e e e e \n"
 				"e e e # . # # . . . . . . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e \n"
 				"e e e # . # # . # # # # . # # # . # # # # # # # # . # # # # # # # # # # # # # # # # \n"
-				"e e e # . # # . # e e # . # # # . . . . . . . . . . . . . . . . . . . . . . . . . # \n"
+				"e e e # . # # . # e e # . # # # . . . . . . . . . g . . . . . . . . . . . . . . . # \n"
 				"e e e # . # # . # e e # . . . . . # # # # # # # # . # # # # # # # # # # # # # # # # \n"
-				"e e e # . . > . # # # # % # # # # # e e e e e e # . # e e e e e e e e e e e e e e e \n"
+				"e e e # . . > . # # # # . # # # # # e e e e e e # . # e e e e e e e e e e e e e e e \n"
 				"e e e # # # # # # # @ . . # e e e e e e e e e e # . # e e e e e e e e e e e e e e e \n"
 				"e e e e e e e e e # . # # # e e e e e e e e e e # . # e e e e e e e e e e e e e e e \n"
 				"e e e # # # e e e # . # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e \n"
 				"e e e # . # # e e # g # e e e e e e e e e e e e # . # e e e e e e e e e e e e e e e \n"
 				"e e e # . . # # # # . # # # # # # # # # # # # # # . # e e e e e e e e e e e e e e e \n"
-				"e e e # . # # . . . . . . . . . . . < . . . . . . . # e e e e e e e e e e e e e e e \n"
+				"e e e # . # # . . . . . . . . g . . < . . . . . . . # e e e e e e e e e e e e e e e \n"
 				"e e e # . # # . # # # # . # # # . # # # # # # # # . # e e e e e e e e e e e e e e e \n"
 				"e e e # . # # . # e e # . # # # . # e e e e e e # . # e e e e e e e e e e e e e e e \n"
 				"e e e # . # # . # e e # . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e \n"

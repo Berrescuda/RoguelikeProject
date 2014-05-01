@@ -14,11 +14,10 @@ deque <string> gameLog;
 
 #include "characters.c++"
 Player player(0, 0);
+#include "display.c++"
 
 
 #include "mapObjects.c++"
-#include "kcurses.c++"
-#include "display.c++"
 
 
 int main(){
@@ -26,11 +25,7 @@ int main(){
 	initCurses();
 	Level levelOne = Level(rawMap);
 	player.currentLevel = &levelOne;
-	while(c != 'q'){
-	mainDisplay(levelOne);
-	c = getch();
-	player.takeTurn(c);
-	}
+	levelOne.processTurn();
 
 	cursesCleanup();
 }

@@ -38,13 +38,15 @@ struct Player: Character{
 
 	Player (int, int);
 
-	void takeTurn(char);
+	bool takeTurn(char);
 };
 
 struct Monster: Character{
 	stack <Tuple> path;
-	stack <int> dork;
-	void findPath(Tile*);
+	stack <Tuple> findPath(Tile*);
+	void takeTurn(Character);
+	void die(Character*);
+	bool alive;
 };
 
 struct SpaceGoblin: Monster{
