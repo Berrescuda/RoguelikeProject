@@ -68,6 +68,8 @@ TileDisplayData Tile::printTile(void){
 }
 
 void Level::clearTileValues(){
+		cout << "TODEL" << endl;
+
 	for(int y = 0; y < levelMap.size(); y++){
 		for(int x = 0; x < levelMap[y].size(); x++)
 			levelMap[y][x].pathValue = 0;

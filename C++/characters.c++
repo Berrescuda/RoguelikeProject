@@ -77,26 +77,23 @@ void Character::die(Character* killer){
 	log(name + " dies");
 	Tile* currentTile = getTile();
 	currentTile->character = NULL;
-	xPos = 0;
-	yPos = 0;
-}
 
-void Monster::die(Character* killer){
-	log(name + " dies");
-	
-	if(getId())
-		currentLevel->monsters[getId()] = NULL;
+	if (isPlayer == false){
+		Monster* monster = this;
+		if(monster->getId())
+			currentLevel->monsters[monster->getId()] = NULL;
+		killer->xp += 1;
+	}else{
+		cursesCleanup();
+		cout << "Sorry, you were killed by a " << killer->name << endl;
+		exit(1);
+	}
 
-	Tile* currentTile = getTile();
-	currentTile->character = NULL;
-
-	alive = false;
-	xPos = 0;
-	yPos = 0;
-	killer->xp += 1;
 }
 
 Tile* Character::getTile(void){
+	cout << "TODEL" << endl;
+
 	return &currentLevel->levelMap[yPos][xPos];
 }
 
@@ -167,6 +164,8 @@ bool Player::takeTurn(char c){
 
 
 stack<Tuple> Monster::findPath(Tile* target){
+		cout << "TODEL" << endl;
+
 	currentLevel->clearTileValues();
 	//The origin is the tile our character is standing on.
 	Tile* origin = getTile();
