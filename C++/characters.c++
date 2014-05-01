@@ -65,9 +65,8 @@ int Character::move(Tuple direction){
 
 
 void Character::attack(Character* target){
-	log("you attack the " + target->name);
+	log(name + " attacks " + target->name);
 	target->currentHp -= power;
-	log("hp = " + to_string(target->currentHp));
 	if(target->currentHp < 1){
 		target->die(this);
 	}

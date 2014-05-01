@@ -126,10 +126,8 @@ void Level::processTurn(){
 		c = getch();
 		if (player.takeTurn(c)){
 			for(int i = 1; i < monsters.size(); i++){			
-				if(monsters[i] != NULL){
+				if(monsters[i] != NULL)
 					monsters[i]->takeTurn(player);
-					log("goblin" + to_string(monsters[i]->getId()) + " takes a turn");
-				}
 			}
 
 		}

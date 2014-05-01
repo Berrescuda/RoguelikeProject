@@ -48,11 +48,11 @@ int drawStatsWindow(int y, int x, int height, int width, const char* name){
 	mvaddstr(y + 2, x, "hp:");
 
 	//Figure out how long the health bar is
-	int healthBarLength = ((10 * 10)/10);
+	int healthBarLength = ((10 * player.currentHp)/player.maxHp);
 	//hp bar
 	hColoredLine(y + 2, x + 3, '=', healthBarLength, COLOR_GREEN);
 	//display current hp/max hp
-	mvaddstr(y + 2, x + 14, "10/10");
+	mvaddstr(y + 2, x + 14, (to_string(player.currentHp) + '/' + to_string(player.maxHp)).c_str());
 	
 	//print player XP
 	mvaddstr(y + 4, x, "XP:");
