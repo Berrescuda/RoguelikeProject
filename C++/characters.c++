@@ -26,6 +26,7 @@ Player::Player (int y, int x){
 	xPos = x;
 	yPos = y;
 	xp = 0;
+	regenCounter = 0;
 	//currentLevel = level;
 }
 
@@ -43,6 +44,8 @@ SpaceGoblin::SpaceGoblin(int y, int x, Level* level){
 	xp = 0;
 	stack<Tuple> path;
 	alive = true;
+	regenCounter = 0;
+
 }
 
 SpaceGoblin::SpaceGoblin(){
@@ -63,6 +66,21 @@ int Character::move(Tuple direction){
 	}
 }
 
+void Character::healNaturally(){
+	if (currentHp < maxHp){
+		//If weve been healing ten turns, 
+		//Heal 1 hp
+		if(regenCounter < 0)
+			regenCounter = 0;
+		regenCounter += 1;
+
+		if (regenCounter >= 10){
+			currentHp += 1;
+			//Start regenerating again
+			regenCounter = 0;
+		}
+	}
+}
 
 void Character::attack(Character* target){
 	log(name + " attacks " + target->name);
@@ -158,6 +176,8 @@ bool Player::takeTurn(char c){
 			move(direction);
 			passTurn = true;
 		}
+		if (passTurn)
+			healNaturally();
 	return passTurn;
 	}
 
@@ -273,6 +293,7 @@ stack<Tuple> Monster::findPath(Tile* target){
 }
 
 void Monster::takeTurn(Character target){
+	healNaturally();
 	stack <Tuple> foundPath = findPath(target.getTile());
 	move(foundPath.top());
 	foundPath.pop();

@@ -5,6 +5,8 @@ struct Character{
 	int maxHp;
 	//Current Hp
 	int currentHp;
+
+	int regenCounter;
 	//Character's Name
 	string name;
 	//Character Symbol
@@ -27,6 +29,7 @@ struct Character{
 	int move(Tuple);
 	void attack(Character*);
 	void die(Character*);
+	void healNaturally();
 	Tile* getTile(void);
 };
 
