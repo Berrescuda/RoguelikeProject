@@ -31,6 +31,8 @@ struct Character{
 	void die(Character*);
 	void healNaturally();
 	Tile* getTile(void);
+	vector<Tile*> getLineOfSight();
+	vector<Tile*> lineOfSight;
 };
 
 struct NullCharacter: Character{

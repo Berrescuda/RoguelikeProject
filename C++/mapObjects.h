@@ -39,6 +39,7 @@ struct Level{
 
 	Level(string map);
 	void clearTileValues();
+	void clearTileVisibility();
 	void processTurn();
 };
 

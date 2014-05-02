@@ -109,7 +109,6 @@ void Character::die(Character* killer){
 }
 
 Tile* Character::getTile(void){
-	cout << "TODEL" << endl;
 
 	return &currentLevel->levelMap[yPos][xPos];
 }
@@ -176,14 +175,63 @@ bool Player::takeTurn(char c){
 			move(direction);
 			passTurn = true;
 		}
-		if (passTurn)
+		if (passTurn){
 			healNaturally();
+			lineOfSight = getLineOfSight();
+		}
 	return passTurn;
 	}
 
+vector<Tile*> Character::getLineOfSight(){
+	vector<Tile*> lineOfSight;
+	Tile* tile;
+	lineOfSight.push_back(getTile());
+	if(isPlayer){
+		currentLevel->clearTileVisibility();
+		Tile* selfTile = getTile();
+		selfTile->visible = true;
+		selfTile->explored = true;
+	}
+	int distance = 8;
+
+	for(int direction = 0; direction < 8; direction++)
+		for(int q = 0; q <= distance; q++)
+			for(int p = 0; p <= q; p++)
+				for(int eps = 0; eps <= q; eps++){
+					int y = 0;
+					for(int x = 1; x <= distance; x++){
+						int EPS = eps + p;
+						if(EPS >= q){
+							EPS -= q;
+							if(direction & 2)
+								y -= 1;
+							else
+								y += 1;
+						}
+						if(direction & 1)
+							x = -x;
+
+						if(direction & 4)
+							tile = &currentLevel->levelMap[x + yPos][y + xPos]; 
+						else
+							tile = &currentLevel->levelMap[y + yPos][x + xPos];
+						lineOfSight.push_back(tile);
+
+						if(isPlayer){
+							tile->visible = true;
+							if(!tile->explored)
+								tile->explored = true;
+
+						if(!tile->terrain.passable)
+							break;
+						}
+					}
+			}
+		return lineOfSight;
+}
+
 
 stack<Tuple> Monster::findPath(Tile* target){
-		cout << "TODEL" << endl;
 
 	currentLevel->clearTileValues();
 	//The origin is the tile our character is standing on.
@@ -205,7 +253,6 @@ stack<Tuple> Monster::findPath(Tile* target){
 	stack <Tuple> directions;
 	vector<Tile*>::iterator tile;
 	vector <Tile*> adjTiles;
-
 	while(currentSquare != target){
 		//make a list of adjacent tiles, and go through them to see
 		//which ones we've explored

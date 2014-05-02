@@ -14,6 +14,8 @@ Tile::Tile(char c, int y, int x, Level* level){
 		yPos = y;
 		terrain = Terrain(c);
 		character = NULL;
+		visible = false;
+		explored = false;
 		switch(c){
 			case '@':
 				player = Player(y, x);
@@ -68,12 +70,15 @@ TileDisplayData Tile::printTile(void){
 }
 
 void Level::clearTileValues(){
-		cout << "TODEL" << endl;
-
-	for(int y = 0; y < levelMap.size(); y++){
+	for(int y = 0; y < levelMap.size(); y++)
 		for(int x = 0; x < levelMap[y].size(); x++)
 			levelMap[y][x].pathValue = 0;
-	}
+}
+
+void Level::clearTileVisibility(){
+	for(int y = 0; y < levelMap.size(); y++)
+		for(int x = 0; x < levelMap[y].size(); x++)
+			levelMap[y][x].visible = false;
 }
 
 //listAdjacentTiles returns a list of tiles that are adjacent to the tile

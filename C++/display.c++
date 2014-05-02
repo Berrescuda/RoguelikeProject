@@ -21,6 +21,8 @@ int drawMap(Level level){
 					//Get the information about how to display that square
 					TileDisplayData squareDisplay = levelMap[i][j].printTile();
 					//Print the current square to the screen
+					if(!levelMap[i][j].visible)
+						squareDisplay.color = COLOR_MAGENTA;
 					attron(COLOR_PAIR(squareDisplay.color));
 					mvaddch(i - player.yPos + 9, (j - player.xPos) * 2 + 18, squareDisplay.symbol);
 					attroff(COLOR_PAIR(squareDisplay.color));

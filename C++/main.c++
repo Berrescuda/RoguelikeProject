@@ -25,6 +25,7 @@ int main(){
 	initCurses();
 	Level levelOne = Level(rawMap);
 	player.currentLevel = &levelOne;
+	player.lineOfSight = player.getLineOfSight();
 	levelOne.processTurn();
 
 	cursesCleanup();
