@@ -18,14 +18,16 @@ int drawMap(Level level){
 			for(j = player.xPos - 8; j <= player.xPos + 8; j++){
 				//Make sure we're not going to collide with either side of our window
 				if (0 < j && j < levelMap[i].size()){
-					//Get the information about how to display that square
-					TileDisplayData squareDisplay = levelMap[i][j].printTile();
-					//Print the current square to the screen
-					if(!levelMap[i][j].visible)
-						squareDisplay.color = COLOR_MAGENTA;
-					attron(COLOR_PAIR(squareDisplay.color));
-					mvaddch(i - player.yPos + 9, (j - player.xPos) * 2 + 18, squareDisplay.symbol);
-					attroff(COLOR_PAIR(squareDisplay.color));
+					if(levelMap[i][j].explored){
+						//Get the information about how to display that square
+						TileDisplayData squareDisplay = levelMap[i][j].printTile();
+						//Print the current square to the screen
+						if(!levelMap[i][j].visible)
+							squareDisplay.color = COLOR_MAGENTA;
+						attron(COLOR_PAIR(squareDisplay.color));
+						mvaddch(i - player.yPos + 9, (j - player.xPos) * 2 + 18, squareDisplay.symbol);
+						attroff(COLOR_PAIR(squareDisplay.color));
+					}
 				}
 			}
 		}

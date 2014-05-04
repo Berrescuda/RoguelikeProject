@@ -176,8 +176,9 @@ bool Player::takeTurn(char c){
 			passTurn = true;
 		}
 		if (passTurn){
+			getLineOfSight();
 			healNaturally();
-			lineOfSight = getLineOfSight();
+			//lineOfSight = getLineOfSight();
 		}
 	return passTurn;
 	}
@@ -199,8 +200,10 @@ vector<Tile*> Character::getLineOfSight(){
 			for(int p = 0; p <= q; p++)
 				for(int eps = 0; eps <= q; eps++){
 					int y = 0;
+					int EPS = eps;
 					for(int x = 1; x <= distance; x++){
-						int EPS = eps + p;
+						EPS += p;
+						int X = x;
 						if(EPS >= q){
 							EPS -= q;
 							if(direction & 2)
@@ -209,12 +212,12 @@ vector<Tile*> Character::getLineOfSight(){
 								y += 1;
 						}
 						if(direction & 1)
-							x = -x;
+							X = -X;
 
 						if(direction & 4)
-							tile = &currentLevel->levelMap[x + yPos][y + xPos]; 
+							tile = &currentLevel->levelMap[X + yPos][y + xPos]; 
 						else
-							tile = &currentLevel->levelMap[y + yPos][x + xPos];
+							tile = &currentLevel->levelMap[y + yPos][X + xPos];
 						lineOfSight.push_back(tile);
 
 						if(isPlayer){
