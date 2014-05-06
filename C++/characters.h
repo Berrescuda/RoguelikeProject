@@ -24,6 +24,7 @@ struct Character{
 
 	int xp;
 
+	Dungeon* dungeon;
 	Level* currentLevel;
 
 	int move(Tuple);

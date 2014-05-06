@@ -17,11 +17,24 @@ Tile::Tile(char c, int y, int x, Level* level){
 		visible = false;
 		explored = false;
 		switch(c){
+
+
+			case '>':
+				currentLevel->downStair.y = yPos;
+				currentLevel->downStair.x = xPos;
+				break;
+			
+			case '<':
+				currentLevel->upStair.y = yPos;
+				currentLevel->upStair.x = xPos;
+				break;
+
 			case '@':
 				player = Player(y, x);
 				character = &player;
 				terrain = Terrain('.');
 				break;
+			
 			case 'g':
 				SpaceGoblin newMonster = SpaceGoblin(y, x, level);
 				character = new SpaceGoblin;
@@ -33,7 +46,6 @@ Tile::Tile(char c, int y, int x, Level* level){
 }
 
 Level::Level(string map){
-	level = 1;
 	int stringPos, y, x;
 	bool passable;
 	stringPos = 0;
@@ -138,3 +150,19 @@ void Level::processTurn(){
 		}
 	}
 }
+
+void Dungeon::processTurn(){
+	char c;
+	while(c != 'q'){
+		mainDisplay(*player.currentLevel);
+		c = getch();
+		if (player.takeTurn(c)){
+			for(int i = 1; i < player.currentLevel->monsters.size(); i++){			
+				if(player.currentLevel->monsters[i] != NULL)
+					player.currentLevel->monsters[i]->takeTurn(player);
+			}
+
+		}
+	}
+}
+

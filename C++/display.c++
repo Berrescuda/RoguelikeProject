@@ -64,7 +64,8 @@ int drawStatsWindow(int y, int x, int height, int width, const char* name){
 	mvaddstr(y + 4, x + 4, xp.c_str());
 
 	//Print the current level of the dungeon the player is on
-	mvaddstr(y + 5, x, "Current Level: 1");
+	mvaddstr(y + 5, x, "Current Level: ");
+	mvaddstr(y + 5, x + 15, to_string(player.currentLevel->levelNumber).c_str());
 
 	//Print the items in the character's inventory.
 	mvaddstr(y + 6, x, "Inventory:");

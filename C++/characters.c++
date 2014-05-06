@@ -127,26 +127,31 @@ int Monster::getId(void){
 
 bool Player::takeTurn(char c){
 		bool passTurn = false;
+		Tile* currentTile = getTile();
 
 		Tuple direction = {0, 0};
-
+	//	log("key pressed was: " + to_string(c));
 		switch(c){
 			case 56:
+			case 3:
 			case 'w':
 				direction.y = -1;
 				break;
 
 			case 50:
+			case 2:
 			case 's':
 				direction.y = 1;
 				break;
 
 			case 52:
+			case 4:
 			case 'a':
 				direction.x = -1;
 				break;
 
 			case 54:
+			case 5:
 			case 'd':
 				direction.x = 1;
 				break;
@@ -172,6 +177,27 @@ bool Player::takeTurn(char c){
 
 			case 53:
 				passTurn = true;
+				break;
+
+			case '>':
+				if(currentTile->terrain.symbol == '>'){
+					currentLevel = dungeon->level[currentLevel->levelNumber + 1];
+					currentTile->character = NULL;
+					yPos = currentLevel->upStair.y;
+					xPos = currentLevel->upStair.x;
+					currentLevel->levelMap[yPos][xPos].character = this;
+				}
+				break;
+
+			case '<':
+				if(currentTile->terrain.symbol == '<'){
+					currentLevel = dungeon->level[currentLevel->levelNumber + - 1];
+					currentTile->character = NULL;
+					yPos = currentLevel->downStair.y;
+					xPos = currentLevel->downStair.x;
+					currentLevel->levelMap[yPos][xPos].character = this;
+				}
+				break;
 		}
 		if(direction.y != 0 || direction.x != 0){
 			move(direction);

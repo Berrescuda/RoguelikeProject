@@ -108,7 +108,6 @@ int wallAdjacentSpaces(int x, int y, vector< vector<char*> > levelMap){
 		//we have a list that holds tuples with the coordinates
 		//of squares adjacent to the one at coordinates x, y
 		//(but it starts empty)
-			cout << "YODEL" << x << ' ' << y << endl;
 
 		vector <Tuple> adjacentSpaces;
 		//our shouldBeWall variable makes sure that
@@ -223,15 +222,11 @@ bool coinFlip(){
 // 				the map we're drawing on
 //returns: 		the position of the corridor when we're done
 void goY(Entrance* corridor, Room target, vector< vector<char*> > levelMap, int direction){
-			cout << corridor->yPos << ' '<< corridor->xPos << endl;
 
 	if(corridor->xPos < 0)
 		corridor->xPos = 0;
 	if(corridor->xPos > 35)
 		corridor->xPos = 35;
-	cout << "goY" << endl;
-	cout << "starting yPos = " << corridor->yPos<<endl;
-	cout << "target yPos = " << target.yPos + target.height - 1<< endl;
 	//while we're not directly to the left or right of the target room
 	while (corridor->yPos != (target.yPos + target.height - 1)){
 		if(corridor->yPos > 35)
@@ -239,7 +234,6 @@ void goY(Entrance* corridor, Room target, vector< vector<char*> > levelMap, int 
 		if(corridor->yPos < 0)
 			break;
 		//plant a square of empty floor
-		cout << corridor->yPos << ' '<< corridor->xPos << endl;
 		*levelMap[corridor->yPos][corridor->xPos] = '.';
 		//travel in the specified direction
 		corridor->yPos += direction;
@@ -253,16 +247,12 @@ void goY(Entrance* corridor, Room target, vector< vector<char*> > levelMap, int 
 // 				the map we're drawing on
 //returns: 		the position of the corridor when we're done
 void goX(Entrance* corridor, Room target, vector< vector<char*> > levelMap, int direction){
-		cout << corridor->yPos << ' '<< corridor->xPos << endl;
 
 	if(corridor->yPos < 0)
 		corridor->yPos = 0;
 	if(corridor->yPos > 35)
 		corridor->yPos = 35;
 
-	cout << "goX" << endl;
-	cout << "starting xPos = " << corridor->xPos<< endl;
-	cout << "target xPos = " << target.xPos + target.width - 1<< endl;
 	//while we're not directly to the left or right of the target room
 	while (corridor->xPos != (target.xPos + target.width - 1)){
 		if(corridor->xPos > 35)
@@ -505,8 +495,6 @@ string generateLevel(int mapWidth, int mapHeight, bool start){
 /*
 int main(){
 	string level = generateLevel(36, 36, true);
-	cout << level << endl;
 
-	//cout << generateLevel(36, 36, true) << endl;
 }
 */

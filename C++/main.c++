@@ -29,10 +29,20 @@ Player player(0, 0);
 int main(){
 	char c;
 	initCurses();
+	Dungeon dungeon;
+
 	Level levelOne = Level(generateLevel(36, 36, true));
+	levelOne.levelNumber = 0;
+	dungeon.level.push_back(&levelOne);
+
+	Level levelTwo = Level(generateLevel(36, 36, false));
+	levelTwo.levelNumber = 1;
+	dungeon.level.push_back(&levelTwo);
+	
 	player.currentLevel = &levelOne;
+	player.dungeon = &dungeon;
 	player.lineOfSight = player.getLineOfSight();
-	levelOne.processTurn();
+	dungeon.processTurn();
 
 	cursesCleanup();
 }

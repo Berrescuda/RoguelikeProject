@@ -35,11 +35,18 @@ struct Tile{
 struct Level{
 	vector<vector <Tile> > levelMap;
 	vector<Monster*> monsters;
-	int level;
+	int levelNumber;
 
 	Level(string map);
 	void clearTileValues();
 	void clearTileVisibility();
+	void processTurn();
+	Tuple upStair;
+	Tuple downStair;
+};
+
+struct Dungeon{
+	vector<Level*> level;
 	void processTurn();
 };
 
