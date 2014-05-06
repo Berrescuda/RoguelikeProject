@@ -6,11 +6,17 @@
 #include <deque>
 #include <list>
 #include <stack>
+
+//#include <stdio.h>
+#include <time.h>
+#include <string>
+
 using namespace std;
 
 deque <string> gameLog;
 
 #include "headers.h"
+#include "levelGenerator.c++"
 
 #include "characters.c++"
 Player player(0, 0);
@@ -23,7 +29,7 @@ Player player(0, 0);
 int main(){
 	char c;
 	initCurses();
-	Level levelOne = Level(rawMap);
+	Level levelOne = Level(generateLevel(36, 36, true));
 	player.currentLevel = &levelOne;
 	player.lineOfSight = player.getLineOfSight();
 	levelOne.processTurn();

@@ -3,20 +3,7 @@
 //Description: This file contains functions for "drawing" a level of the 
 //dungeon. 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <vector>
-#include <deque>
-#include <stack>
-#include <string>
-
 using namespace std;
-
-struct Tuple{
-int xPos;
-int yPos;
-};
 
 //The room class defines a room inside the level
 //It contains coordinates and the dimensions of the room to be created,
@@ -35,9 +22,10 @@ struct Room{
 	//to the rest of the dungeon
 	bool connected;
 
-	Room(int, int, vector< vector<char> >);
-	int placeInRoom(char, vector< vector<char> >);
-	bool connect(Room, vector< vector<char> >);
+	Room(int, int, vector< vector<char*> >);
+	void drawRoom(vector< vector<char*> >);
+	int placeInRoom(char, vector< vector<char*> >);
+	bool connect(Room, vector< vector<char*> >);
 };
 
 struct Entrance{
@@ -50,7 +38,7 @@ int yPos;
 //parameters: 	width and height of the map we're drawing, 
 // 				the map we're drawing on.
 //returns: 		nothing
-Room::Room(int mapWidth, int mapHeight, vector< vector<char> > levelMap){
+Room::Room(int mapWidth, int mapHeight, vector< vector<char*> > levelMap){
 	connected = false;
 
 	//randomize width
@@ -61,20 +49,23 @@ Room::Room(int mapWidth, int mapHeight, vector< vector<char> > levelMap){
 	//randomize position
 	xPos = rand()% (mapWidth - width);
 	yPos = rand()% (mapHeight - height);
+	drawRoom(levelMap);
+}
 
-	//iterate over the map array and plant a "." on spaces
+void Room::drawRoom(vector< vector<char*> > levelMap){
+		//iterate over the map array and plant a "." on spaces
 	//where our room exists
 	for (int y = 0; y < height; y++)
 		for (int x = 0; x < width; x++)
 			//set string at coordinates to represent empty floor
-			levelMap[yPos + y][xPos + x] = '.';
+			*levelMap[yPos + y][xPos + x] = '.';
 }
 
 //place in room puts an object in an unocupied square in our room
 //parameters: 	symbol of the object we're placing,
 //				map of the level we're placing it on
 //returns: 		nothing
-int Room::placeInRoom(char symbol, vector< vector<char> > levelMap){
+int Room::placeInRoom(char symbol, vector< vector<char*> > levelMap){
 	//While we haven't found an empty square, keep trying to
 	bool success = false;
 	while (!success){
@@ -83,9 +74,9 @@ int Room::placeInRoom(char symbol, vector< vector<char> > levelMap){
 		int x = xPos + rand()% (width -1) + 1;
 
 		//check to see if this square is occupied
-		if (levelMap[y][x] == '.'){
+		if (*levelMap[y][x] == '.'){
 			//if it isn't, set the square to display our object
-			levelMap[y][x] = symbol;
+			*levelMap[y][x] = symbol;
 			//and end our loop
 			success = true;
 		}
@@ -113,10 +104,12 @@ int Room::placeInRoom(char symbol, vector< vector<char> > levelMap){
 //Returns: 		a code specifying how the function went
 // 				a 1 if the square we start at should actually be a wall,
 //				a 0 if everything went according to plan
-int wallAdjacentSpaces(int x, int y, vector< vector<char> > levelMap){
+int wallAdjacentSpaces(int x, int y, vector< vector<char*> > levelMap){
 		//we have a list that holds tuples with the coordinates
 		//of squares adjacent to the one at coordinates x, y
 		//(but it starts empty)
+			cout << "YODEL" << x << ' ' << y << endl;
+
 		vector <Tuple> adjacentSpaces;
 		//our shouldBeWall variable makes sure that
 		//each of the following if statements is true
@@ -137,7 +130,7 @@ int wallAdjacentSpaces(int x, int y, vector< vector<char> > levelMap){
 			
 		//if y is less than the height of the map,
 		//a square exists below us
-		if (y < levelMap.size() - 1){					//Down
+		if (y < 35){					//Down
 			//add the coordinates of our tile to our list
 			adjacentSpaces.push_back({y + 1, x});
 			//decrement our security measure
@@ -159,7 +152,7 @@ int wallAdjacentSpaces(int x, int y, vector< vector<char> > levelMap){
 			shouldBeWall -= 1;
 		}
 		//check if a tile exists diagonally to the right and down
-		if (y < levelMap.size() - 1 && x < levelMap[y].size() - 1){
+		if (y < 35 && x < 35){
 			//add the coordinates of our tile to our list
 			adjacentSpaces.push_back({y + 1, x + 1});	//DownRight
 			//decrement our security measure
@@ -167,7 +160,7 @@ int wallAdjacentSpaces(int x, int y, vector< vector<char> > levelMap){
 		}
 		
 		//check if a tile exists diagonally to the right and up
-		if (y > 0 && x < levelMap[y].size() - 1){
+		if (y > 0 && x < 35){
 			//add the coordinates of our tile to our list
 			adjacentSpaces.push_back({y -1, x + 1});		//UpRight
 			//decrement our security measure
@@ -182,7 +175,7 @@ int wallAdjacentSpaces(int x, int y, vector< vector<char> > levelMap){
 			shouldBeWall -= 1;
 		}
 		//check if a tile exists diagonally down and to the left
-		if (y < levelMap.size() - 1 && x > 0){
+		if (y < 35 && x > 0){
 			//add the coordinates of our tile to our list
 			adjacentSpaces.push_back({y + 1, x - 1});	//DownLeft
 			//decrement our security measure
@@ -192,7 +185,7 @@ int wallAdjacentSpaces(int x, int y, vector< vector<char> > levelMap){
 		if (shouldBeWall > 0){
 			//if should be wall has been decremented any less than 8 times,
 			//this square needs to be a wall or it will break the game
-			levelMap[y][x] = '#';
+			*levelMap[y][x] = '#';
 			//let the caller of the function know if they want to
 			return 1;
 		}
@@ -201,8 +194,8 @@ int wallAdjacentSpaces(int x, int y, vector< vector<char> > levelMap){
 		for(int i = 0; i < adjacentSpaces.size(); i++)
 				//if the adjacent space is empty (not a ".")
 				//put a wall there
-				if (levelMap[adjacentSpaces[i].yPos][adjacentSpaces[i].xPos] == NULL)
-					levelMap[adjacentSpaces[i].yPos][adjacentSpaces[i].xPos] = '#';
+				if (*levelMap[adjacentSpaces[i].y][adjacentSpaces[i].x] == ' ')
+					*levelMap[adjacentSpaces[i].y][adjacentSpaces[i].x] = '#';
 			
 			//return an all clear
 			return 0;
@@ -229,16 +222,28 @@ bool coinFlip(){
 //				the position we're going to, 
 // 				the map we're drawing on
 //returns: 		the position of the corridor when we're done
-Entrance goY(Entrance corridor, Room target, vector< vector<char> > levelMap, int direction){
+void goY(Entrance* corridor, Room target, vector< vector<char*> > levelMap, int direction){
+			cout << corridor->yPos << ' '<< corridor->xPos << endl;
+
+	if(corridor->xPos < 0)
+		corridor->xPos = 0;
+	if(corridor->xPos > 35)
+		corridor->xPos = 35;
+	cout << "goY" << endl;
+	cout << "starting yPos = " << corridor->yPos<<endl;
+	cout << "target yPos = " << target.yPos + target.height - 1<< endl;
 	//while we're not directly to the left or right of the target room
-	while (corridor.yPos > (target.yPos + target.height + direction)){
+	while (corridor->yPos != (target.yPos + target.height - 1)){
+		if(corridor->yPos > 35)
+			break;
+		if(corridor->yPos < 0)
+			break;
 		//plant a square of empty floor
-		levelMap[corridor.yPos][corridor.xPos] = '.';
+		cout << corridor->yPos << ' '<< corridor->xPos << endl;
+		*levelMap[corridor->yPos][corridor->xPos] = '.';
 		//travel in the specified direction
-		corridor.yPos += direction;
+		corridor->yPos += direction;
 	}
-	//when we're done, return the new position of the end of the corridor
-	return corridor;
 }
 //The goX function draws a square, and then travels along the x axis one square
 //repeating this process until it reaches the target value of x.
@@ -247,16 +252,28 @@ Entrance goY(Entrance corridor, Room target, vector< vector<char> > levelMap, in
 //				the position we're going to, 
 // 				the map we're drawing on
 //returns: 		the position of the corridor when we're done
-Entrance goX(Entrance corridor, Room target, vector< vector<char> > levelMap, int direction){
+void goX(Entrance* corridor, Room target, vector< vector<char*> > levelMap, int direction){
+		cout << corridor->yPos << ' '<< corridor->xPos << endl;
+
+	if(corridor->yPos < 0)
+		corridor->yPos = 0;
+	if(corridor->yPos > 35)
+		corridor->yPos = 35;
+
+	cout << "goX" << endl;
+	cout << "starting xPos = " << corridor->xPos<< endl;
+	cout << "target xPos = " << target.xPos + target.width - 1<< endl;
 	//while we're not directly to the left or right of the target room
-	while (corridor.xPos > (target.xPos + target.width + direction)){
+	while (corridor->xPos != (target.xPos + target.width - 1)){
+		if(corridor->xPos > 35)
+			break;
+		if(corridor->xPos < 0)
+			break;
 		//plant a square of empty floor
-		levelMap[corridor.yPos][corridor.xPos] = '.';
+		*levelMap[corridor->yPos][corridor->xPos] = '.';
 		//travel in the specified direction
-		corridor.yPos += direction;
+		corridor->xPos += direction;
 	}
-	//when we're done, return the new position of the end of the corridor
-	return corridor;
 }
 
 //The buildCorridor function builds a corridor from one room to another
@@ -269,18 +286,21 @@ Entrance goX(Entrance corridor, Room target, vector< vector<char> > levelMap, in
 //
 //Returns: 			Nothing
 
-void buildCorridor(Entrance corridor, Room target, vector< vector<char> > levelMap, int xDirection, int yDirection, bool startInYDirection){
+void buildCorridor(Entrance* corridor, Room target, vector< vector<char*> > levelMap, int yDirection, int xDirection, bool startInYDirection){
 	//If we start off in the y direction:
+
 	if (startInYDirection){
 		//go up or down until we lie some distance from the target room
 		//along the x axis
-		corridor = goY(corridor, target, levelMap, yDirection);
+		//corridor = 
+		goY(corridor, target, levelMap, yDirection);
 		//travel along the x axis until we collide with the room
 		goX(corridor, target, levelMap, xDirection);
 	//otherwise we start off travelling in the x direction
 	}else{
 		//we go left or right until we lie along the y axis with the target room
-		corridor = goX(corridor, target, levelMap, xDirection);
+		//corridor = 
+		goX(corridor, target, levelMap, xDirection);
 		//travel along the x axis until we collide with the room
 		goY(corridor, target, levelMap, yDirection);
 	}
@@ -290,7 +310,7 @@ void buildCorridor(Entrance corridor, Room target, vector< vector<char> > levelM
 //a string that can be read by the level initializer in mapObjects.py
 //parameters: 		An array representing our level
 //returns: 			a string representing our map
-string levelMapToString(vector< vector<char> > levelMap){
+string levelMapToString(vector< vector<char*> > levelMap){
 	//Initialize our empty map string
 	string mapString;
 	//Iterate along the y axis
@@ -299,16 +319,17 @@ string levelMapToString(vector< vector<char> > levelMap){
 		for(int x = 0; x < levelMap.size(); x++){
 			//If the square is empty,
 			//add a character that signifies that
-			if (levelMap[y][x] == NULL)
+			if (*levelMap[y][x] == ' ')
 				//add the relevant character to our string
-				levelMap[y][x] = 'e';
+				*levelMap[y][x] = 'e';
 				//add a space for aesthetic effect
-			mapString += levelMap[y][x] + ' ';
+			mapString += *levelMap[y][x];
+			mapString += ' ';
+		}
 		//at the end of each row, we push a slash, to signify
 		//the row being over, allowing the mapstring parser
 		//to break the string up into rows and columns
 		mapString += '\n';
-		}
 	}
 	//return the completed string
 	return mapString;
@@ -317,14 +338,14 @@ string levelMapToString(vector< vector<char> > levelMap){
 //tiles that should be walls into walls
 //parameters: 	the map we're drawing on
 //returns: 		nothing
-void addWalls(vector< vector<char> > levelMap){
+void addWalls(vector< vector<char*> > levelMap){
 	//iterate over the rows on our map
-	for (int y = 0; y < levelMap.size(); y++)
+	for (int y = 0; y < 36; y++)
 		//iterate over the spaces in the row
-		for (int x = 0; x < levelMap[y].size(); x++)
+		for (int x = 0; x < 36; x++)
 			//if the space is a floor, check adjacent
 			//spaces to see if they should be walls
-			if (levelMap[y][x] == '.')
+			if (*levelMap[y][x] == '.')
 				wallAdjacentSpaces(x, y, levelMap);
 	
 }
@@ -339,21 +360,20 @@ void addWalls(vector< vector<char> > levelMap){
 //a corridor that goes from one room to the other.
 //parameters: 		room to draw a corridor to, the map we're drawing on
 //returns: 			True
-bool Room::connect(Room room, vector< vector<char> > levelMap){
-
+bool Room::connect(Room target, vector< vector<char*> > levelMap){
 	int yDirection;
 	int xDirection;
 	// // // // // ORIENTATION // // // // //
 	//if the room we're trying to draw a corridor to is on our right,
 	//we will be going east
-	if (room.xPos > xPos)
+	if (target.xPos > xPos)
 		xDirection = 1;
 	else
 		//otherwise we'll be going west
 		xDirection = -1;
 
 	//on a similar note, if the room we're connecting to is above us, we're going north
-	if (room.yPos < yPos)
+	if (target.yPos < yPos)
 		yDirection = -1;
 	else
 		//and if it's below us we're going south
@@ -369,15 +389,15 @@ bool Room::connect(Room room, vector< vector<char> > levelMap){
 	if (startDirection){
 		//if the coinflip turns up y, we leave from the wall corresponding to the direction
 		//we'll be travelling in the y direction
-		int entrance = yDirection;	
+		int entrance = yDirection;
 		if (entrance == -1)
 			//if the entrance is on the north side, we set the initial square for the entrance
 			//somewhere randomly on the north wall
-			corridor = {yPos, rand()% (xPos + width) + xPos};
+			corridor = {yPos, rand()%width + xPos};
 
 		else
 			//otherwise we'll initialize the entrance to the corridor at a random point on the south wall
-			corridor = {yPos + height, rand()% (xPos + width) + xPos};
+			corridor = {yPos + height, rand()%width + xPos};
 	}
 	//If the coinflip indicates otherwise, we'll start instead by travelling in the x direction
 	else{
@@ -385,14 +405,14 @@ bool Room::connect(Room room, vector< vector<char> > levelMap){
 		int entrance = xDirection;
 		if (entrance == -1)
 			//set the entrance somewhere randomly on the west wall
-			corridor = {rand()% (yPos + height) + yPos, xPos};
+			corridor = {rand()%height + yPos, xPos};
 		else
 			//set the entrance somewhere random on the east wall
-			corridor = {rand()% (yPos + height) + yPos, xPos + width};
+			corridor = {rand()%height + yPos, xPos + width};
 	}
 	// // // // // BUILD CORRIDOR AND WRAP UP // // // // 
 	//Then we build our corridor from our start room to our target room.
-	buildCorridor(corridor, room, levelMap, xDirection, yDirection, startDirection);
+	buildCorridor(&corridor, target, levelMap, xDirection, yDirection, startDirection);
 
 	//we are now connected to the other room, and by extension, the rest of the dungeon
 	connected = true;
@@ -408,14 +428,16 @@ bool Room::connect(Room room, vector< vector<char> > levelMap){
 string generateLevel(int mapWidth, int mapHeight, bool start){
 	srand(time(NULL));
 	//Initialize our map array
-	vector< vector<char> > levelMap;
-	levelMap.resize(mapHeight * 2);
+	vector< vector<char*> > levelMap;
+	levelMap.resize(mapHeight);
 	for(int i = 0; i < mapHeight; i++)
 		levelMap[i].resize(sizeof(char) * mapWidth);
 
 	for(int i = 0; i < mapHeight; i++)
-		for(int j = 0; j < mapWidth; j++)
-			levelMap[i][j] = ' ';
+		for(int j = 0; j < mapWidth; j++){
+			levelMap[i][j] = new char;
+			*levelMap[i][j] = ' ';
+		}
 
 	//initialize our list of rooms that haven't been connected to each other yet
 	stack <Room> unconnectedRooms;
@@ -443,11 +465,13 @@ string generateLevel(int mapWidth, int mapHeight, bool start){
 		Room room = unconnectedRooms.top();
 
 		//connect our unconnected room to the rest of the dungeon
-		if (room.connect(connectedRooms[rand()% connectedRooms.size() -1], levelMap)){
-			//push our connected room into our list of connected rooms
-			connectedRooms.push_back(room);
-			unconnectedRooms.pop();
-		}
+		if(connectedRooms.size() > 0)
+			room.connect(connectedRooms[rand()%connectedRooms.size()], levelMap);
+		else
+			room.connect(connectedRooms[0], levelMap);
+		//push our connected room into our list of connected rooms
+		connectedRooms.push_back(room);
+		unconnectedRooms.pop();
 	}
 	//we now have a basic shell of the dungeon
 	//composed of "." spaces and empty spaces
@@ -468,17 +492,21 @@ string generateLevel(int mapWidth, int mapHeight, bool start){
 	//for every room
 	for (int i = 0; i < connectedRooms.size(); i++){
 		//25% chance of the room having a goblin in it
-		if (rand()%3 + 1 == 4)
+		if (rand()%4 + 1 == 4)
 				connectedRooms[i].placeInRoom('g', levelMap);
 		//one in seven chance of a potion being put in the room.
 		if (rand()%7 + 1 == 7)
 			connectedRooms[i].placeInRoom('%', levelMap);
 	}
-			
+
 	//return the completed string
 	return levelMapToString(levelMap);
 }
-
+/*
 int main(){
-	generateLevel(36, 36, true);
+	string level = generateLevel(36, 36, true);
+	cout << level << endl;
+
+	//cout << generateLevel(36, 36, true) << endl;
 }
+*/
