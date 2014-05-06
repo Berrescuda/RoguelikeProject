@@ -45,6 +45,8 @@ SpaceGoblin::SpaceGoblin(int y, int x, Level* level){
 	stack<Tuple> path;
 	alive = true;
 	regenCounter = 0;
+	vector<Tile*> lineOfSight;
+	canSeePlayer = false;
 
 }
 
@@ -224,10 +226,16 @@ vector<Tile*> Character::getLineOfSight(){
 							tile->visible = true;
 							if(!tile->explored)
 								tile->explored = true;
+						}
+						else
+							if(tile->character != NULL && tile->character->isPlayer){
+								Monster* thisMonster = this;
+								thisMonster->canSeePlayer = true;
+							}
+						
 
 						if(!tile->terrain.passable)
 							break;
-						}
 					}
 			}
 		return lineOfSight;
@@ -344,7 +352,11 @@ stack<Tuple> Monster::findPath(Tile* target){
 
 void Monster::takeTurn(Character target){
 	healNaturally();
-	stack <Tuple> foundPath = findPath(target.getTile());
-	move(foundPath.top());
-	foundPath.pop();
+	canSeePlayer = false;
+	getLineOfSight();
+	if(canSeePlayer){
+		stack <Tuple> foundPath = findPath(target.getTile());
+		move(foundPath.top());
+		foundPath.pop();
+	}
 }

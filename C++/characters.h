@@ -53,6 +53,7 @@ struct Monster: Character{
 	void die(Character*);
 	int getId(void);
 	bool alive;
+	bool canSeePlayer;
 };
 
 struct SpaceGoblin: Monster{
