@@ -18,30 +18,44 @@ Tile::Tile(char c, int y, int x, Level* level){
 		explored = false;
 		switch(c){
 
-
-			case '>':
+			case '>':{
 				currentLevel->downStair.y = yPos;
 				currentLevel->downStair.x = xPos;
 				break;
+			}
 			
-			case '<':
+			case '<':{
 				currentLevel->upStair.y = yPos;
 				currentLevel->upStair.x = xPos;
 				break;
+			}
 
-			case '@':
+
+
+			case '@':{
 				player = Player(y, x);
 				character = &player;
 				terrain = Terrain('.');
 				break;
+			}
 			
-			case 'g':
+
+			case '%':{
+				Potion* potionPointer = new Potion;
+				items.push_back(potionPointer);
+				terrain = Terrain('.');
+
+				break;
+			} 
+
+			case 'g':{
 				SpaceGoblin newMonster = SpaceGoblin(y, x, level);
 				character = new SpaceGoblin;
 				*character = newMonster;
 				currentLevel->monsters.push_back(character);
 				terrain = Terrain('.');
-				break; 
+				break;
+			}
 		}
 }
 
@@ -77,6 +91,8 @@ TileDisplayData Tile::printTile(void){
 		return TileDisplayData{0, ' '};
 	if(character != NULL)
 		return TileDisplayData{character->color, character->symbol};
+	if(!items.empty())
+		return TileDisplayData{items[0]->color, items[0]->symbol};
 	return TileDisplayData{0, terrain.symbol};
 	
 }

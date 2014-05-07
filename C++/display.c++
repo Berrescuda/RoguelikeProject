@@ -69,10 +69,10 @@ int drawStatsWindow(int y, int x, int height, int width, const char* name){
 
 	//Print the items in the character's inventory.
 	mvaddstr(y + 6, x, "Inventory:");
-	/*
-	for i in range(len(player.inventory)):
-		mvaddstr(y + 7 + i, x, player.inventory[i].name)
-	*/
+
+	if (!player.inventory.empty())
+		for(int i = 0; i < player.inventory.size(); i++)
+			mvaddstr(y + 7 + i, x, player.inventory[i]->name.c_str());
 }
 
 void drawLogWindow(int y, int x, int height, int width){

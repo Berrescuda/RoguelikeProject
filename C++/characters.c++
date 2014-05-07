@@ -179,6 +179,20 @@ bool Player::takeTurn(char c){
 				passTurn = true;
 				break;
 
+			case 'g':
+				if (!currentTile->items.empty()){
+					inventory.push_back(currentTile->items.front());
+					currentTile->items.erase(currentTile->items.begin());
+				}
+				break;
+
+			case 'u':
+				if(!inventory.empty()){
+					inventory[inventory.size() - 1]->drink(this);
+					inventory.pop_back();
+				}
+				break;
+
 			case '>':
 				if(currentTile->terrain.symbol == '>'){
 					currentLevel = dungeon->level[currentLevel->levelNumber + 1];

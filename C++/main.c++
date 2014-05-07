@@ -31,7 +31,8 @@ int main(){
 	initCurses();
 	Dungeon dungeon;
 
-	Level levelOne = Level(generateLevel(36, 36, true));
+	
+	Level levelOne = Level(rawMap);
 	levelOne.levelNumber = 0;
 	dungeon.level.push_back(&levelOne);
 

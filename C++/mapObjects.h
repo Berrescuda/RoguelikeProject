@@ -29,6 +29,7 @@ struct Tile{
 	Tile(char, int, int, Level*);
 	TileDisplayData printTile(void);
 	vector <Tile*> listAdjacentTiles(void);
+	vector <Item*> items;
 
 };
 
@@ -75,7 +76,7 @@ string rawMap = "e e e # # # # e e e e e e e e e e e e e e e e e # # # e e e e e
 				"e e e # . . # # # # # # # # # # # # e e e e e e # . # e e e e e e e e e e e e e e e \n"
 				"e e e # . # # . . . . . . . . . . # e e e e e e # . # e e e e e e e e e e e e e e e \n"
 				"e e e # . # # . # # # # . # # # . # # # # # # # # . # # # # # # # # # # # # # # # # \n"
-				"e e e # . # # . # e e # . # # # . . . . . @ . . . . . . . . . . . . . . . . . . . # \n"
+				"e e e # . # # . # e e # . # # # % % @ . . . . . . . . . . . . . . . . . . . . . . # \n"
 				"e e e # . # # . # e e # . . . . . # # # # # # # # . # # # # # # # # # # # # # # # # \n"
 				"e e e # . . > . # # # # . # # # # # e e e e e e # . # e e e e e e e e e e e e e e e \n"
 				"e e e # # # # # # # . . . # e e e e e e e e e e # . # e e e e e e e e e e e e e e e \n"

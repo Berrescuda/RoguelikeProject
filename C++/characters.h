@@ -34,6 +34,7 @@ struct Character{
 	Tile* getTile(void);
 	vector<Tile*> getLineOfSight();
 	vector<Tile*> lineOfSight;
+	vector<Item*> inventory;
 };
 
 struct NullCharacter: Character{
