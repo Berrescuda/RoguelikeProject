@@ -1,4 +1,4 @@
-//File name: levelGenerator.py
+//File name: levelGenerator.c++
 //Author: Klemente Gilbert-Espada										
 //Description: This file contains functions for "drawing" a level of the 
 //dungeon. 
@@ -471,7 +471,7 @@ string generateLevel(int mapWidth, int mapHeight, bool start){
 	
 	//if this is the first level of the dungeon, we dump the player in the first room
 	//we generated (because that's easy)
-	if (start)
+	if (!start)
 		connectedRooms[0].placeInRoom('@', levelMap);
 	
 	//put an up staircase on every level

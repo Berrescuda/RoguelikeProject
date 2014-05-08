@@ -22,10 +22,15 @@ int drawMap(Level level){
 						//Get the information about how to display that square
 						TileDisplayData squareDisplay = levelMap[i][j].printTile();
 						//Print the current square to the screen
+						//...if we can see it
 						if(!levelMap[i][j].visible)
+							//otherwise we print it in magenta
 							squareDisplay.color = COLOR_MAGENTA;
+						//color on
 						attron(COLOR_PAIR(squareDisplay.color));
+						//print character
 						mvaddch(i - player.yPos + 9, (j - player.xPos) * 2 + 18, squareDisplay.symbol);
+						//color off
 						attroff(COLOR_PAIR(squareDisplay.color));
 					}
 				}
@@ -83,11 +88,10 @@ void drawLogWindow(int y, int x, int height, int width){
 	}
 }
 
-
+//This is just a wrapper that takes a string and
+//passes it along to the log
 void log(string message){
-	string input;
-	input = message;
-	gameLog.push_front(input);
+	gameLog.push_front(message);
 }
 
 //our mainDisplay function is where our primary in game curses calls take place
