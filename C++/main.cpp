@@ -1,4 +1,4 @@
-//File Name: main.c++
+//File Name: main.cpp
 //Author: Klemente Gilbert-Espada
 //Description: The file that runs the game
 
@@ -23,15 +23,15 @@ deque <string> gameLog;
 #include "headers.h"
 
 //Import the level generator
-#include "levelGenerator.c++"
+#include "levelGenerator.cpp"
 //The character functions
-#include "characters.c++"
+#include "characters.cpp"
 //globally declare the player (this is lazy, will fix later)
 Player player(0, 0);
 //The visual component
-#include "display.c++"
+#include "display.cpp"
 //How tiles behave
-#include "mapObjects.c++"
+#include "mapObjects.cpp"
 //How items behave
 #include "items.cpp"
 

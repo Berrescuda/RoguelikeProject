@@ -1,4 +1,4 @@
-//File name:mapObjects.c++
+//File name:mapObjects.cpp
 //Author: Klemente Gilbert-Espada
 //Description: This file determines how tiles, levels and the dungeon behave
 //				(This includes the overall structure of the game)

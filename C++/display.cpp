@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-//File name: display.c++
+//File name: display.cpp
 //Author: Klemente Gilbert-Espada										
 //Description: This file contains the functions for drawing the game screen
 //(the map of the level, the window containing info of the players stats)

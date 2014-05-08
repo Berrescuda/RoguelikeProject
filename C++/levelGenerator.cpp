@@ -1,4 +1,4 @@
-//File name: levelGenerator.c++
+//File name: levelGenerator.cpp
 //Author: Klemente Gilbert-Espada										
 //Description: This file contains functions for "drawing" a level of the 
 //dungeon. 

@@ -1,4 +1,4 @@
-//File name: characters.c++
+//File name: characters.cpp
 //Author: Klemente Gilbert-Espada										
 //Description: This file contains the method definitions for the characters
 //defined in characters.h
