@@ -527,9 +527,32 @@ class SpaceGoblin (Monster):
 	currentHp = maxHp
 	#They don't do magic. But to be fair, no one does yet.
 	maxMp = 0
-	currentMp = 0
+	currentMp = maxMp
 	#They're worth the least possible experience.
 	xpValue = 1
+
+
+
+
+#A bit classier than Earth hobos, but just as smelly.
+#Hobos are stronger than goblins, but still weaker than the
+#character.
+class SpaceHobo (Monster):
+	#A badge of honor or sadness
+	name = "Space Hobo"
+	#They will be represented by a red h for now.
+	#(Color is set in the character template)
+	symbol = 'h'
+	#They have less HP than character, but more than space goblin.
+	maxHp = 7
+	currentHp = maxHp
+	#They don't do magic. But to be fair, no one does yet.
+	maxMp = 0
+	currentMp = maxMp
+	#They're worth a little bit of experience.
+	xpValue = 2
+
+
 
 
 #the null character is just a temporary placeholder

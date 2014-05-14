@@ -432,6 +432,9 @@ def generateLevel(mapWidth, mapHeight, start):
 		#25% chance of the room having a goblin in it
 		if randint(1, 4) == 4:
 				room.placeInRoom("g", levelMap)
+		#8% chance of the room having a hobo in it
+		if randint(1,100) <= 8:
+			room.placeInRoom("h", levelMap)
 		#one in seven chance of a potion being put in the room.
 		if randint(1, 7) == 7:
 			room.placeInRoom("%", levelMap)

@@ -203,6 +203,13 @@ class Level:
 					newCharacters.append(["SpaceGoblin", y, x])
 					#append a tile with an empty floor for now
 					tileRow.append(Tile(Floor, y, x))
+
+				#A space hobo.
+				elif space == "h":
+					#Put a space hobo into the list of characters to initialize
+					newCharacters.append(["SpaceHobo", y, x])
+					#append a tile with an empty floor for now
+					tileRow.append(Tile(Floor, y, x))
 				
 				#Our player character
 				elif space == "@":
@@ -242,6 +249,9 @@ class Level:
 			#at the y and x coordinates we have. (NewChar[2] and [3] respectively)
 			if newChar[0] == "SpaceGoblin":
 				characters.SpaceGoblin(self, newChar[1], newChar[2])
+			#If the name is "SpaceHobo", initialize an instance of a space hobo
+			elif newChar[0] == "SpaceHobo":
+				characters.SpaceHobo(self, newChar[1], newChar[2])
 			#Otherwise if we're initializing a player, we do that in the same way.
 			elif newChar[0] == "Player":
 				characters.Player(self, newChar[1], newChar[2])
