@@ -57,7 +57,7 @@ x")
 	(setf *cursorX* 0)
 	)
 
-(defun display-box(y-start x-start)
+(defun display-screen(y-start x-start)
 	(setf *cursorY* y-start)
 	(setf *cursorX* x-start)
 	(setf *y* (- (slot-value *player* 'yPos) 8))
@@ -84,12 +84,24 @@ x")
 	(hline (+ height y-start) x-start #\- width)
 	(hline y-start x-start #\- width ))
 
+(defun display()
+	(erase)
+	(drawFrame 0 0 18 36)
+	(display-screen 1 1)
+	(drawFrame 19 0 4 36)
+	(drawFrame 0 38 18 23)
+	(mvaddstr 1 39 "Name:")
+	(mvaddstr 1 44 (slot-value *player* 'name))
+	(mvaddstr 2 39 "hp:")
+	(hline 2 42 #\= 9)
+	(mvaddstr 2 53 "10/10")
+	)
+
 
 (defun getLoop ()
 	(erase)
-   	(drawFrame 0 0 18 36)
-	(display-box 1 1)
-	(drawFrame 19 0 4 36)
+
+	(display)
 
 	(loop
   		(case (curses-code-char (getch))
@@ -102,11 +114,7 @@ x")
  			((#\3) (setf (slot-value *player* 'yPos) (+ (slot-value *player* 'yPos) 1)) (setf (slot-value *player* 'xPos) (+ (slot-value *player* 'xPos) 1)))
   			((#\7) (setf (slot-value *player* 'yPos) (- (slot-value *player* 'yPos) 1)) (setf (slot-value *player* 'xPos) (- (slot-value *player* 'xPos) 1)))
   			((#\9) (setf (slot-value *player* 'yPos) (- (slot-value *player* 'yPos) 1)) (setf (slot-value *player* 'xPos) (+ (slot-value *player* 'xPos) 1))))
-    	(erase)
-    	(drawFrame 0 0 18 36)
-    	(display-box 1 1)
-    	(drawFrame 19 0 4 36)
-    	))
+    	(display)))
 
 
 ;Class Definitions
