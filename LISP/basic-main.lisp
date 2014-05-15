@@ -1,7 +1,7 @@
 (defparameter *cursorX* nil)
 (defparameter *cursorY* nil)
 (defparameter *mapString*  
-" ####                 ###               
+"   ####                 ###               
    #..############      #.#               
    #.##..........#      #.#               
    #.##.####.###.########.################
@@ -76,7 +76,7 @@ x")
 		(setf *cursorX* x-start)
 		(setf *x* (- (slot-value *player* 'xPos) 8)))
 	(attrset :cred)
-	(mvaddstr (+ 8 y-start) (+ 16 (* 2 x-start)) "@") (attrset :cwhite))
+	(mvaddstr (+ 8 y-start) (+ 16 (* 2 x-start)) "@") (attrset :cgray))
 
 (defun drawFrame (y-start x-start height width)
 	(vline (+ y-start 1) x-start #\| (- height 1))
@@ -95,7 +95,7 @@ x")
 	(mvaddstr 2 39 "hp:")
 	(attrset :cgreen)
 	(hline 2 42 #\= 9)
-	(attrset :cwhite)
+	(attrset :cgray)
 	(mvaddstr 2 53 "10/10")
 	(mvaddstr 4 39 "XP:0")
 	(mvaddstr 5 39 "Current Level: 0")
@@ -110,17 +110,23 @@ x")
 
 	(loop
   		(case (curses-code-char (getch))
+  			(defvar directions (vector 0 0))
   			((#\q) (return))
-  			((#\s #\2) (setf (slot-value *player* 'yPos) (+ (slot-value *player* 'yPos) 1)))
-  			((#\w #\8) (setf (slot-value *player* 'yPos) (- (slot-value *player* 'yPos) 1)))
-  			((#\d #\6) (setf (slot-value *player* 'xPos) (+ (slot-value *player* 'xPos) 1)))
-  			((#\a #\4) (setf (slot-value *player* 'xPos) (- (slot-value *player* 'xPos) 1)))
-  			((#\1) (setf (slot-value *player* 'yPos) (+ (slot-value *player* 'yPos) 1)) (setf (slot-value *player* 'xPos) (- (slot-value *player* 'xPos) 1)))
- 			((#\3) (setf (slot-value *player* 'yPos) (+ (slot-value *player* 'yPos) 1)) (setf (slot-value *player* 'xPos) (+ (slot-value *player* 'xPos) 1)))
-  			((#\7) (setf (slot-value *player* 'yPos) (- (slot-value *player* 'yPos) 1)) (setf (slot-value *player* 'xPos) (- (slot-value *player* 'xPos) 1)))
-  			((#\9) (setf (slot-value *player* 'yPos) (- (slot-value *player* 'yPos) 1)) (setf (slot-value *player* 'xPos) (+ (slot-value *player* 'xPos) 1))))
+  			((#\s #\2) (setf directions (vector 1 0)))
+  			((#\w #\8) (setf directions (vector -1 0)))
+  			((#\d #\6) (setf directions (vector 0 1)))
+  			((#\a #\4) (setf directions (vector 0 -1)))
+  			((#\1) (setf directions (vector 1 -1)))
+ 			((#\3) (setf directions (vector 1 1)))
+  			((#\7) (setf directions (vector -1 -1)))
+  			((#\9) (setf directions (vector -1 1))))
+    	(if(not-blocked directions) (progn
+    		(setf (slot-value *player* 'yPos) (+ (slot-value *player* 'yPos) (elt directions 0)))
+    		(setf (slot-value *player* 'xPos) (+ (slot-value *player* 'xPos) (elt directions 1)))))
     	(display)))
 
+(defun not-blocked (directions)
+	(CHAR/= (elt (elt *map* (+ (slot-value *player* 'yPos) (elt directions 0))) (+ (slot-value *player* 'xPos) (elt directions 1))) #\#))
 
 ;Class Definitions
 
