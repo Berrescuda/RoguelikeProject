@@ -1,26 +1,26 @@
 (defparameter *cursorX* nil)
 (defparameter *cursorY* nil)
 (defparameter *mapString*  
-"eee####eeeeeeeeeeeeeeeee###eeeeeeeeeeeeeee
-eee#..############eeeeee#.#eeeeeeeeeeeeeee
-eee#.##..........#eeeeee#.#eeeeeeeeeeeeeee
-eee#.##.####.###.########.################
-eee#.##.#ee#.###.........................#
-eee#.##.#ee#.....########.################
-eee#..>.####%#####eeeeee#.#eeeeeeeeeeeeeee
-eee#######...#eeeeeeeeee#.#eeeeeeeeeeeeeee
-eeeeeeeee#.###eeeeeeeeee#.#eeeeeeeeeeeeeee
-eee###eee#.#eeeeeeeeeeee#.#eeeeeeeeeeeeeee
-eee#.##ee#.#eeeeeeeeeeee#.#eeeeeeeeeeeeeee
-eee#..####.##############.#eeeeeeeeeeeeeee
-eee#.##...........<.......#eeeeeeeeeeeeeee
-eee#.##.####.###.########.#eeeeeeeeeeeeeee
-eee#.##.#ee#.###.#eeeeee#.#eeeeeeeeeeeeeee
-eee#.##.#ee#.....#eeeeee#.#eeeeeeeeeeeeeee
-eee#....####.#####eeeeee#.#eeeeeeeeeeeeeee
-eee#######...#eeeeeeeeee#.#eeeeeeeeeeeeeee
-eeeeeeeee#.###eeeeeeeeee#.#eeeeeeeeeeeeeee
-eeeeeeeee###eeeeeeeeeeee###eeeeeeeeeeeeeee
+" ####                 ###               
+   #..############      #.#               
+   #.##..........#      #.#               
+   #.##.####.###.########.################
+   #.##.#  #.###.........................#
+   #.##.#  #.....########.################
+   #..>.####%#####      #.#               
+   #######...#          #.#               
+         #.###          #.#               
+   ###   #.#            #.#               
+   #.##  #.#            #.#               
+   #..####.##############.#               
+   #.##...........<.......#               
+   #.##.####.###.########.#               
+   #.##.#  #.###.#      #.#               
+   #.##.#  #.....#      #.#               
+   #....####.#####      #.#               
+   #######...#          #.#               
+         #.###          #.#               
+         ###            ###               
 x")
 
 (defun stringToVectorMap (inputString)
@@ -75,8 +75,8 @@ x")
 
 		(setf *cursorX* x-start)
 		(setf *x* (- (slot-value *player* 'xPos) 8)))
-
-	(mvaddstr (+ 8 y-start) (+ 16 (* 2 x-start)) "@"))
+	(attrset :cred)
+	(mvaddstr (+ 8 y-start) (+ 16 (* 2 x-start)) "@") (attrset :cwhite))
 
 (defun drawFrame (y-start x-start height width)
 	(vline (+ y-start 1) x-start #\| (- height 1))
@@ -93,8 +93,13 @@ x")
 	(mvaddstr 1 39 "Name:")
 	(mvaddstr 1 44 (slot-value *player* 'name))
 	(mvaddstr 2 39 "hp:")
+	(attrset :cgreen)
 	(hline 2 42 #\= 9)
+	(attrset :cwhite)
 	(mvaddstr 2 53 "10/10")
+	(mvaddstr 4 39 "XP:0")
+	(mvaddstr 5 39 "Current Level: 0")
+	(mvaddstr 6 39 "Inventory:")
 	)
 
 
