@@ -84,7 +84,7 @@ x")
 		(setf *cursorX* x-start)
 		(setf *x* (- (slot-value *player* 'xPos) 8)))
 	(attrset :cred)
-	(mvaddstr (+ 8 y-start) (+ 16 (* 2 x-start)) "@") (attrset :cgray))
+	(mvaddch (+ 8 y-start) (+ 16 (* 2 x-start)) (slot-value *player* 'symbol)) (attrset :cgray))
 
 (defun draw-frame (y-start x-start height width)
 	(vline (+ y-start 1) x-start #\| (- height 1))
@@ -162,9 +162,7 @@ x")
   		;check to see if the square we're trying to move to is blocked
     	(if(not-blocked directions)
     		;if it's not blocked, we move our player to the square
-    		(progn
-    			(setf (slot-value *player* 'yPos) (+ (slot-value *player* 'yPos) (elt directions 0)))
-    			(setf (slot-value *player* 'xPos) (+ (slot-value *player* 'xPos) (elt directions 1)))))
+    		(move-creature *player* directions))
     	;update the display
     	(display)))
 
@@ -175,6 +173,10 @@ x")
 (defun not-blocked (directions)
 	;This line of code checks to see if the square pointed to by directions is a wall
 	(CHAR/= (elt (elt *map* (+ (slot-value *player* 'yPos) (elt directions 0))) (+ (slot-value *player* 'xPos) (elt directions 1))) #\#))
+
+(defun move-creature (creature directions)
+	(setf (slot-value creature 'yPos) (+ (slot-value creature 'yPos) (elt directions 0)))
+    (setf (slot-value creature 'xPos) (+ (slot-value creature 'xPos) (elt directions 1))))
 
 ;Class Definitions
 
@@ -196,7 +198,16 @@ x")
 	(setf (slot-value *player* 'currenthp) 10)
 	(setf (slot-value *player* 'yPos) y)
 	(setf (slot-value *player* 'xPos) x)
-	(setf (slot-value *player* 'symbol) "@")
+	(setf (slot-value *player* 'symbol) #\@))
+
+(defun init-goblin (y x)
+	(defparameter *goblin* (make-instance 'creature))
+	(setf (slot-value *goblin* 'name) "space goblin")
+	(setf (slot-value *goblin* 'maxhp) 5)
+	(setf (slot-value *goblin* 'currenthp) 5)
+	(setf (slot-value *goblin* 'yPos) y)
+	(setf (slot-value *goblin* 'name) x)
+	(setf (slot-value *goblin* 'symbol) #\g)
 	)
 
 ;curses helper functions
