@@ -83,8 +83,23 @@ x")
 
 		(setf *cursorX* x-start)
 		(setf *x* (- (slot-value *player* 'xPos) 8)))
-	(attrset :cred)
-	(mvaddch (+ 8 y-start) (+ 16 (* 2 x-start)) (slot-value *player* 'symbol)) (attrset :cgray))
+	
+	(loop for monster in *monsters*
+		do(if(and 
+			(>= (slot-value monster 'yPos) (- (slot-value *player* 'yPos) 8))
+			(<= (slot-value monster 'yPos) (+ (slot-value *player* 'yPos) 8))
+			(>= (slot-value monster 'xPos) (- (slot-value *player* 'xPos) 8))
+			(<= (slot-value monster 'xPos) (+ (slot-value *player* 'xPos) 8)))
+			(mvaddch 
+				(+(- (slot-value monster 'yPos) (slot-value *player* 'yPos)) (+ 8 y-start)) 
+				(*(+(- (slot-value monster 'xPos) (slot-value *player* 'xPos)) (+ 8 x-start)) 2) 
+				(slot-value monster 'symbol))))
+
+	(print-creature *player* (+ 8 y-start) (+ 16 (* 2 x-start))))
+
+
+
+
 
 (defun draw-frame (y-start x-start height width)
 	(vline (+ y-start 1) x-start #\| (- height 1))
@@ -97,6 +112,7 @@ x")
 (defun basic-main ()
 	;plunk the player down somewhere
 	(init-player 10 10)
+	(init-goblin 11 10)
 	;load the map into the string parser
 	(string-to-vector-map *mapString*)
 	;start curses
@@ -200,15 +216,24 @@ x")
 	(setf (slot-value *player* 'xPos) x)
 	(setf (slot-value *player* 'symbol) #\@))
 
+(defparameter *monsters* (list))
+
 (defun init-goblin (y x)
 	(defparameter *goblin* (make-instance 'creature))
 	(setf (slot-value *goblin* 'name) "space goblin")
 	(setf (slot-value *goblin* 'maxhp) 5)
 	(setf (slot-value *goblin* 'currenthp) 5)
 	(setf (slot-value *goblin* 'yPos) y)
-	(setf (slot-value *goblin* 'name) x)
+	(setf (slot-value *goblin* 'xPos) x)
 	(setf (slot-value *goblin* 'symbol) #\g)
+	;A little pythonic, but it does what I want it to do
+	(setf *monsters* (append *monsters* (list *goblin*)))
 	)
+
+(defun print-creature (creature y x)
+	(attrset :cred)
+	(mvaddch y x (slot-value creature 'symbol)) 
+	(attrset :cgray))
 
 ;curses helper functions
 (defun hline (y-start x-start symbol length)
