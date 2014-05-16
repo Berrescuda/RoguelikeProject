@@ -1,14 +1,19 @@
 ;These will need to be moved later
-(defparameter *cursorX* nil)
-(defparameter *cursorY* nil)
+(defparameter *cursor-x* nil)
+(defparameter *cursor-y* nil)
 (defparameter *y* 0)
 (defparameter *x* 0)
 
 ;This is our global map. (It's a vector of vectors!)
 (defparameter *map* (make-array 50 :fill-pointer 0))
 
+;This is our global monster list.
+(defparameter *monsters* (list))
+
+(defparameter *log* (list "hello" "welcome to" "LISPCRAWL"))
+
 ;This won't exist once we're done testing stuff
-(defparameter *mapString*  
+(defparameter *map-string*  
 "   ####                 ###               
    #..############      #.#               
    #.##..........#      #.#               
@@ -34,7 +39,7 @@ x")
 ;string-to-vector-map takes a string and populates our vector of vectors with it
 ;Parameters: 	string (a string representing our map, as above)
 ;Returns: 		nothing (but updates our global map with correct info)
-(defun string-to-vector-map (inputString)
+(defun string-to-vector-map (input-string)
 	;y and x are going to be used for working our way through the input string and
 	;keeping track of the appropriate position in the map we're populating
 	(setf *x* 0)
@@ -42,19 +47,19 @@ x")
 
 	;currently the end of our map is denoted by an x, which should change later
 	;while the current character we're on isn't an x:
-	(loop while(CHAR/= (elt inputString *x*) #\x)
+	(loop while(CHAR/= (elt input-string *x*) #\x)
 		;create a new row vector 
 		do(defparameter *row* (make-array 50 :fill-pointer 0))
 		
 		;traverse the current row, pushing characters from the string 
 		;into our vector, until we hit a newline
-		(loop while(CHAR/= (elt inputString *x*) #\Newline)
+		(loop while(CHAR/= (elt input-string *x*) #\Newline)
 			;push the current character into our row vector
-			do (vector-push (elt inputString *x*) *row*)
+			do (vector-push (make-instance 'tile :symbol (elt input-string *x*)) *row*)
 				;increment x
 				(setf *x* (+ *x* 1)) 
 				;if the current character is an x, break out of this loop
-				(if(Char= (elt inputString *x*) #\x) (return)))
+				(if(Char= (elt input-string *x*) #\x) (return)))
 		
 		;increment x, we're crossing over the newline
 		(setf *x* (+ *x* 1))
@@ -66,34 +71,34 @@ x")
 
 
 (defun display-screen(y-start x-start)
-	(setf *cursorY* y-start)
-	(setf *cursorX* x-start)
-	(setf *y* (- (slot-value *player* 'yPos) 8))
-	(setf *x* (- (slot-value *player* 'xPos) 8))
+	(setf *cursor-y* y-start)
+	(setf *cursor-x* x-start)
+	(setf *y* (- (slot-value *player* 'y-pos) 8))
+	(setf *x* (- (slot-value *player* 'x-pos) 8))
 
-	(loop while(< *cursorY* (+ 17 y-start)) 
-		do(loop while(< *cursorX* (+ 17 x-start)) 
+	(loop while(< *cursor-y* (+ 17 y-start)) 
+		do(loop while(< *cursor-x* (+ 17 x-start)) 
 			do (if(and (>= *y* 0) (>= *x* 0) (< *y* (length *map*)) (< *x* (length (elt *map* *y*))))
-				(mvaddch *cursorY* (* *cursorX* 2) (elt (elt *map* *y*) *x*)))
-			(setf *cursorX* (+ *cursorX* 1))
+				(mvaddch *cursor-y* (* *cursor-x* 2) (slot-value (elt (elt *map* *y*) *x*) 'symbol)))
+			(setf *cursor-x* (+ *cursor-x* 1))
 			(setf *x* (+ *x* 1)))
 
-		(setf *cursorY* (+ *cursorY* 1))
+		(setf *cursor-y* (+ *cursor-y* 1))
 		(setf *y* (+ *y* 1))
 
-		(setf *cursorX* x-start)
-		(setf *x* (- (slot-value *player* 'xPos) 8)))
+		(setf *cursor-x* x-start)
+		(setf *x* (- (slot-value *player* 'x-pos) 8)))
 	
 	(loop for monster in *monsters*
 		do(if(and 
-			(>= (slot-value monster 'yPos) (- (slot-value *player* 'yPos) 8))
-			(<= (slot-value monster 'yPos) (+ (slot-value *player* 'yPos) 8))
-			(>= (slot-value monster 'xPos) (- (slot-value *player* 'xPos) 8))
-			(<= (slot-value monster 'xPos) (+ (slot-value *player* 'xPos) 8)))
-			(mvaddch 
-				(+(- (slot-value monster 'yPos) (slot-value *player* 'yPos)) (+ 8 y-start)) 
-				(*(+(- (slot-value monster 'xPos) (slot-value *player* 'xPos)) (+ 8 x-start)) 2) 
-				(slot-value monster 'symbol))))
+			(>= (slot-value monster 'y-pos) (- (slot-value *player* 'y-pos) 8))
+			(<= (slot-value monster 'y-pos) (+ (slot-value *player* 'y-pos) 8))
+			(>= (slot-value monster 'x-pos) (- (slot-value *player* 'x-pos) 8))
+			(<= (slot-value monster 'x-pos) (+ (slot-value *player* 'x-pos) 8)))
+			(print-creature
+				monster 
+				(+(- (slot-value monster 'y-pos) (slot-value *player* 'y-pos)) (+ 8 y-start)) 
+				(*(+(- (slot-value monster 'x-pos) (slot-value *player* 'x-pos)) (+ 8 x-start)) 2))))
 
 	(print-creature *player* (+ 8 y-start) (+ 16 (* 2 x-start))))
 
@@ -111,10 +116,11 @@ x")
 ;that constitutes the majority of the action
 (defun basic-main ()
 	;plunk the player down somewhere
+	(string-to-vector-map *map-string*)
+	
 	(init-player 10 10)
 	(init-goblin 11 10)
 	;load the map into the string parser
-	(string-to-vector-map *mapString*)
 	;start curses
 	(connect-console)
 	;print out the screen
@@ -134,6 +140,9 @@ x")
 	(display-screen 1 1)
 	;draw a box around the log zone
 	(draw-frame 19 0 4 36)
+	(mvaddstr 20 1 (elt (reverse *log*) 2))
+	(mvaddstr 21 1 (elt (reverse *log*) 1))
+	(mvaddstr 22 1 (elt (reverse *log*) 0))
 	;draw a box around the stat window
 	(draw-frame 0 38 18 23)
 	
@@ -176,9 +185,7 @@ x")
   			((#\7) (setf directions (vector -1 -1)))
   			((#\9) (setf directions (vector -1 1))))
   		;check to see if the square we're trying to move to is blocked
-    	(if(not-blocked directions)
-    		;if it's not blocked, we move our player to the square
-    		(move-creature *player* directions))
+    	(move-in-direction *player* directions)
     	;update the display
     	(display)))
 
@@ -186,25 +193,57 @@ x")
 ;too gross to put into the code up there unshortened
 ;Parameters: 	a tuple of directions to see if we can move there
 ;Returns: 		true if it's not blocked, false if it is
-(defun not-blocked (directions)
+(defun not-blocked (creature directions)
+	;This line of code gets the tile the character is trying to move on to
+	(defparameter *target-tile* (elt (elt *map* (+ (slot-value creature 'y-pos) (elt directions 0))) (+ (slot-value creature 'x-pos) (elt directions 1))))
+	
 	;This line of code checks to see if the square pointed to by directions is a wall
-	(CHAR/= (elt (elt *map* (+ (slot-value *player* 'yPos) (elt directions 0))) (+ (slot-value *player* 'xPos) (elt directions 1))) #\#))
+	(CHAR/= (slot-value *target-tile* 'symbol) #\#))
 
 (defun move-creature (creature directions)
-	(setf (slot-value creature 'yPos) (+ (slot-value creature 'yPos) (elt directions 0)))
-    (setf (slot-value creature 'xPos) (+ (slot-value creature 'xPos) (elt directions 1))))
+	(defparameter *target-tile* (elt (elt *map* (+ (slot-value creature 'y-pos) (elt directions 0))) (+ (slot-value creature 'x-pos) (elt directions 1))))
+	(setf (slot-value (slot-value creature 'tile) 'character) nil)
+	(setf (slot-value creature 'y-pos) (+ (slot-value creature 'y-pos) (elt directions 0)))
+    (setf (slot-value creature 'x-pos) (+ (slot-value creature 'x-pos) (elt directions 1)))
+	(setf (slot-value creature 'tile) *target-tile*)
+	(setf (slot-value *target-tile* 'character) creature)
+	)
 
+(defun move-in-direction (creature directions)
+	(if(not-blocked creature directions)
+    		;if it's not blocked, we move our player to the square
+    		(if (not(slot-value *target-tile* 'character)) (move-creature creature directions) (attack creature (slot-value *target-tile* 'character)))))
+
+(defun attack (attacker defender)
+	(setf (slot-value defender 'currenthp) (- (slot-value defender 'currenthp) (slot-value attacker 'power)))
+	(if(<= (slot-value defender 'currenthp) 0) (die defender)))
+
+(defun die (departed)
+	(setf *log* (append *log* (list (format nil "~a has died." (slot-value departed 'name)))))
+	(setf *monsters* (remove departed *monsters*))
+	(setf (slot-value (slot-value departed 'tile) 'character) nil)
+
+	)
 ;Class Definitions
 
 ;base creature class
 (defclass creature () 
 	(maxhp
 	currenthp
-	xPos
-	yPos
+	x-pos
+	y-pos
 	name
 	symbol
+	(power
+		:initform 1)
+	tile
 	))
+
+(defclass tile ()
+	((symbol
+	:initarg :symbol)
+	(character
+		:initform nil)))
 
 ;This is perhaps the least elegant way to do this imaginable
 (defun init-player (y x)
@@ -212,21 +251,25 @@ x")
 	(setf (slot-value *player* 'name) "foobar")
 	(setf (slot-value *player* 'maxhp) 10)
 	(setf (slot-value *player* 'currenthp) 10)
-	(setf (slot-value *player* 'yPos) y)
-	(setf (slot-value *player* 'xPos) x)
-	(setf (slot-value *player* 'symbol) #\@))
+	(setf (slot-value *player* 'y-pos) y)
+	(setf (slot-value *player* 'x-pos) x)
+	(setf (slot-value *player* 'symbol) #\@)
+	(setf (slot-value *player* 'tile) (elt (elt *map* y) x))
+	(setf (slot-value (elt (elt *map* y) x)'character) *player*))
 
-(defparameter *monsters* (list))
 
 (defun init-goblin (y x)
 	(defparameter *goblin* (make-instance 'creature))
-	(setf (slot-value *goblin* 'name) "space goblin")
+	(setf (slot-value *goblin* 'name) "Space goblin")
 	(setf (slot-value *goblin* 'maxhp) 5)
 	(setf (slot-value *goblin* 'currenthp) 5)
-	(setf (slot-value *goblin* 'yPos) y)
-	(setf (slot-value *goblin* 'xPos) x)
+	(setf (slot-value *goblin* 'y-pos) y)
+	(setf (slot-value *goblin* 'x-pos) x)
 	(setf (slot-value *goblin* 'symbol) #\g)
-	;A little pythonic, but it does what I want it to do
+	(setf (slot-value *goblin* 'tile) (elt (elt *map* y) x))
+	(setf (slot-value (elt (elt *map* y) x)'character) *goblin*)
+
+	;feels a little pythonic, but it does what I want it to do
 	(setf *monsters* (append *monsters* (list *goblin*)))
 	)
 
