@@ -186,8 +186,17 @@ x")
   			((#\9) (setf directions (vector -1 1))))
   		;check to see if the square we're trying to move to is blocked
     	(move-in-direction *player* directions)
+    	(monsters-turn)
     	;update the display
     	(display)))
+
+(defun monsters-turn ()
+	(loop for monster in *monsters* 
+		do (find-path monster (slot-value *player* 'tile))
+		(move-in-direction monster (elt *direction-list* 0))
+		(setf *direction-list* (remove (elt *direction-list* 0) *direction-list*))
+		)
+	)
 
 ;This is just a helper function since this was 
 ;too gross to put into the code up there unshortened
@@ -215,6 +224,7 @@ x")
     		(if (not(slot-value *target-tile* 'character)) (move-creature creature directions) (attack creature (slot-value *target-tile* 'character)))))
 
 (defun attack (attacker defender)
+	(log-message (format nil "~a attacks ~a." (slot-value attacker 'name) (slot-value defender 'name)))
 	(setf (slot-value defender 'currenthp) (- (slot-value defender 'currenthp) (slot-value attacker 'power)))
 	(when(<= (slot-value defender 'currenthp) 0)(die defender)
 		(setf (slot-value attacker 'xp) (+ (slot-value attacker 'xp) 1)))
@@ -223,9 +233,10 @@ x")
 (defun die (departed)
 	(setf *log* (append *log* (list (format nil "~a has died." (slot-value departed 'name)))))
 	(setf *monsters* (remove departed *monsters*))
-	(setf (slot-value (slot-value departed 'tile) 'character) nil)
+	(setf (slot-value (slot-value departed 'tile) 'character) nil))
 
-	)
+(defun log-message (input)
+(setf *log* (append *log* (list input))))
 ;Class Definitions
 
 ;base creature class
@@ -309,6 +320,39 @@ x")
 	adjacent-tiles
 )
 
+(defun clear-path-values ()
+	(loop for row across *map*
+		do(loop for tile across row
+			do(setf (slot-value tile 'path-value) 0)
+			)
+		)
+	)
+
 (defun find-path (creature target)
+	(defparameter *current-tile* (slot-value creature 'tile))
+	(defparameter *origin-tile* (slot-value creature 'tile))
+	(defparameter *unexplored-tiles* (list))
+	(defparameter *direction-list* (list))
+	(clear-path-values)
+
+	(loop while (not(eq *current-tile* target))
+			do(loop for tile in (list-adjacent-tiles *current-tile*) 
+				do (when (and (char/= (slot-value tile 'symbol) #\#) (= (slot-value tile 'path-value) 0))
+						(if (eq *current-tile* *origin-tile*) (setf (slot-value tile 'path-value) 1) (if (not(eq tile *origin-tile*)) (setf (slot-value tile 'path-value) (+ (slot-value *current-tile* 'path-value) 1))))
+						(setf *unexplored-tiles* (append *unexplored-tiles* (list tile)))
+						(if (eq tile target) (return)))
+				)
+			(if (and (> (length *unexplored-tiles*) 0) (not (eq *current-tile* target))) (progn 
+					(setf *current-tile* (elt *unexplored-tiles* 0)) (setf *unexplored-tiles* (remove *current-tile* *unexplored-tiles*))))
+			)
+	(loop while (not(eq *current-tile* *origin-tile*))
+		do (loop for tile in (list-adjacent-tiles *current-tile*)
+			do (when (and (eq (slot-value tile 'path-value) (- (slot-value *current-tile* 'path-value) 1)) (or (eq tile *origin-tile*) (> (slot-value tile 'path-value) 0)))
+				(setf *direction-list* (append (list (list (- (slot-value *current-tile* 'y-pos) (slot-value tile 'y-pos)) (- (slot-value *current-tile* 'x-pos) (slot-value tile 'x-pos))))*direction-list*))
+				(setf *current-tile* tile)
+				(return)
+				)
+			)
+		)
 
 	)
