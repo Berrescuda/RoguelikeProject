@@ -55,7 +55,7 @@ x")
 		;into our vector, until we hit a newline
 		(loop while(CHAR/= (elt input-string *x*) #\Newline)
 			;push the current character into our row vector
-			do (vector-push (make-instance 'tile :symbol (elt input-string *x*)) *row*)
+			do (vector-push (make-instance 'tile :symbol (elt input-string *x*) :y-pos *y* :x-pos (if(> *y* 0)(- *x* (* (+ (length (elt *map* 0)) 1) *y*)) *x*)) *row*)
 				;increment x
 				(setf *x* (+ *x* 1)) 
 				;if the current character is an x, break out of this loop
@@ -157,7 +157,7 @@ x")
 	(attrset :cgray)
 	(mvaddstr 2 53 "10/10")
 	;xp
-	(mvaddstr 4 39 "XP:0")
+	(mvaddstr 4 39 (format nil "XP:~a" (slot-value *player* 'xp)))
 	;level of the dungeon
 	(mvaddstr 5 39 "Current Level: 0")
 	;player's inventory
@@ -216,7 +216,9 @@ x")
 
 (defun attack (attacker defender)
 	(setf (slot-value defender 'currenthp) (- (slot-value defender 'currenthp) (slot-value attacker 'power)))
-	(if(<= (slot-value defender 'currenthp) 0) (die defender)))
+	(when(<= (slot-value defender 'currenthp) 0)(die defender)
+		(setf (slot-value attacker 'xp) (+ (slot-value attacker 'xp) 1)))
+	)
 
 (defun die (departed)
 	(setf *log* (append *log* (list (format nil "~a has died." (slot-value departed 'name)))))
@@ -236,14 +238,22 @@ x")
 	symbol
 	(power
 		:initform 1)
+	(xp
+		:initform 0)
 	tile
 	))
 
 (defclass tile ()
-	((symbol
-	:initarg :symbol)
+	((y-pos
+		:initarg :y-pos) 
+	(x-pos
+		:initarg :x-pos)
+	(symbol
+		:initarg :symbol)
 	(character
-		:initform nil)))
+		:initform nil)
+	(path-value
+		:initform 0)))
 
 ;This is perhaps the least elegant way to do this imaginable
 (defun init-player (y x)
@@ -285,4 +295,14 @@ x")
 
 (defun vline (y-start x-start symbol length)
 	(loop for y from y-start to (+ y-start length) do (mvaddch y x-start symbol))
+	)
+
+(defun list-adjacent-tiles (center-tile)
+	(loop for x from 0 to 2 
+		do()
+		)
+	)
+
+(defun find-path (creature target)
+
 	)
