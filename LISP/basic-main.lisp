@@ -153,9 +153,14 @@ x")
 	;hp
 	(mvaddstr 2 39 "hp:")
 	(attrset :cgreen)
-	(hline 2 42 #\= 9)
+	
+	;This prints the player's health bar,
+	;The way I'm calculating the length of 
+	;the bar here isn't going to cut it when 
+	;the player's max-hp can actually increase
+	(hline 2 42 #\= (slot-value *player* 'currenthp))
 	(attrset :cgray)
-	(mvaddstr 2 53 "10/10")
+	(mvaddstr 2 53 (format nil "~a/~a" (slot-value *player* 'currenthp) (slot-value *player* 'maxhp)))
 	;xp
 	(mvaddstr 4 39 (format nil "XP:~a" (slot-value *player* 'xp)))
 	;level of the dungeon
