@@ -3,6 +3,7 @@
 (defparameter *cursor-y* nil)
 (defparameter *y* 0)
 (defparameter *x* 0)
+(defparameter *creature-stack* (list))
 
 ;This is our global map. (It's a vector of vectors!)
 (defparameter *map* (make-array 50 :fill-pointer 0))
@@ -20,12 +21,12 @@
    #.##.####.###.########.################
    #.##.#  #.###.........................#
    #.##.#  #.....########.################
-   #..>.####%#####      #.#               
-   #######...#          #.#               
+   #..>.####.#####      #.#               
+   #######g..#          #.#               
          #.###          #.#               
    ###   #.#            #.#               
    #.##  #.#            #.#               
-   #..####.##############.#               
+   #..####@##############.#               
    #.##...........<.......#               
    #.##.####.###.########.#               
    #.##.#  #.###.#      #.#               
@@ -79,12 +80,21 @@ x")
 		;traverse the current row, pushing characters from the string 
 		;into our vector, until we hit a newline
 		(loop while(CHAR/= (elt input-string *x*) #\Newline)
+			do
+			(case (elt input-string *x*)
+
+				((#\g #\@)
+					(setf *creature-stack* (append *creature-stack* (list (list *y* (grid-x *x*) (elt input-string *x*)))))
+					(setf (elt input-string *x*) #\.)
+				)
+			)
+
 			;push the current character into our row vector
-			do (vector-push (make-instance 'tile :symbol (elt input-string *x*) :y-pos *y* :x-pos (if(> *y* 0)(- *x* (* (+ (length (elt *map* 0)) 1) *y*)) *x*)) *row*)
-				;increment x
-				(setf *x* (+ *x* 1)) 
-				;if the current character is an x, break out of this loop
-				(if(Char= (elt input-string *x*) #\x) (return)))
+			(vector-push (make-instance 'tile :symbol (elt input-string *x*) :y-pos *y* :x-pos (grid-x *x*)) *row*)
+			;increment x
+			(setf *x* (+ *x* 1)) 
+			;if the current character is an x, break out of this loop
+			(if(Char= (elt input-string *x*) #\x) (return)))
 		
 		;increment x, we're crossing over the newline
 		(setf *x* (+ *x* 1))
@@ -94,6 +104,20 @@ x")
 		;(is there seriously not a better way to do this?)
 		(setf *y* (+ *y* 1))))
 
+(defun grid-x (x)
+	(if(> *y* 0)(- x (* (+ (length (elt *map* 0)) 1) *y*)) x)
+	)
+
+(defun unpack-creature-stack ()
+	(loop while (> (length *creature-stack*) 0)
+	do
+	(case(elt (elt *creature-stack* 0) 2)
+		((#\g) (init-goblin (elt (elt *creature-stack* 0) 0) (elt (elt *creature-stack* 0) 1) ))
+		((#\@) (init-player (elt (elt *creature-stack* 0) 0) (elt (elt *creature-stack* 0) 1) ))
+		)
+	(setf *creature-stack* (remove (elt *creature-stack* 0) *creature-stack*))
+	)
+)
 
 (defun display-screen(y-start x-start)
 	(setf *cursor-y* y-start)
@@ -144,10 +168,10 @@ x")
 (defun basic-main ()
 	;plunk the player down somewhere
 	(string-to-vector-map *map-string*)
-	
-	(init-player 10 10)
+	(unpack-creature-stack)
+	;(init-player 10 10)
 	(get-line-of-sight *player*)
-	(init-goblin 13 10)
+	;(init-goblin 13 10)
 	;load the map into the string parser
 	;start curses
 	(connect-console)
