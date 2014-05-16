@@ -298,10 +298,16 @@ x")
 	)
 
 (defun list-adjacent-tiles (center-tile)
-	(loop for x from 0 to 2 
-		do()
+	(defparameter adjacent-tiles (list))
+	(loop for y from (- (slot-value center-tile 'y-pos) 1) to (+ (slot-value center-tile 'y-pos) 1)
+		do(loop for x from (- (slot-value center-tile 'x-pos) 1) to (+ (slot-value center-tile 'x-pos) 1)
+			do(if (not(and (= y (slot-value center-tile 'y-pos)) (= x (slot-value center-tile 'x-pos)))) (setf adjacent-tiles
+							(append adjacent-tiles (list (elt (elt *map* y) x)))		
+						))	
 		)
 	)
+	adjacent-tiles
+)
 
 (defun find-path (creature target)
 
