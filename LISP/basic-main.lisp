@@ -13,7 +13,7 @@
 (defparameter *log* (list "hello" "welcome to" "LISPCRAWL"))
 
 ;This won't exist once we're done testing stuff
-(defparameter *map-string*  
+(defparameter *map-string*
 "   ####                 ###               
    #..############      #.#               
    #.##..........#      #.#               
@@ -35,6 +35,31 @@
          #.###          #.#               
          ###            ###               
 x")
+
+;"...............................
+;...............................
+;...............................
+;...............................
+;...............................
+;...............................
+;...............................
+;...............................
+;...............................
+;...............................
+;...............................
+;...............................
+;...............................
+;...............................
+;...............................
+;...............................
+;...............................
+;...............................
+;...............................
+;...............................
+;...............................
+;...............................
+;x")
+
 
 ;string-to-vector-map takes a string and populates our vector of vectors with it
 ;Parameters: 	string (a string representing our map, as above)
@@ -78,8 +103,10 @@ x")
 
 	(loop while(< *cursor-y* (+ 17 y-start)) 
 		do(loop while(< *cursor-x* (+ 17 x-start)) 
-			do (if(and (>= *y* 0) (>= *x* 0) (< *y* (length *map*)) (< *x* (length (elt *map* *y*))))
-				(mvaddch *cursor-y* (* *cursor-x* 2) (slot-value (elt (elt *map* *y*) *x*) 'symbol)))
+			do (when(and (>= *y* 0) (>= *x* 0) (< *y* (length *map*)) (< *x* (length (elt *map* *y*))) (slot-value (elt (elt *map* *y*) *x*) 'explored) )
+				(if (not(slot-value (elt (elt *map* *y*) *x*) 'visible)) (attrset :cpurple))
+				(mvaddch *cursor-y* (* *cursor-x* 2) (slot-value (elt (elt *map* *y*) *x*) 'symbol))
+				(attrset :cgray))
 			(setf *cursor-x* (+ *cursor-x* 1))
 			(setf *x* (+ *x* 1)))
 
@@ -119,7 +146,8 @@ x")
 	(string-to-vector-map *map-string*)
 	
 	(init-player 10 10)
-	(init-goblin 11 10)
+	(get-line-of-sight *player*)
+	(init-goblin 13 10)
 	;load the map into the string parser
 	;start curses
 	(connect-console)
@@ -153,7 +181,7 @@ x")
 	;hp
 	(mvaddstr 2 39 "hp:")
 	(attrset :cgreen)
-	
+
 	;This prints the player's health bar,
 	;The way I'm calculating the length of 
 	;the bar here isn't going to cut it when 
@@ -191,15 +219,20 @@ x")
   			((#\9) (setf directions (vector -1 1))))
   		;check to see if the square we're trying to move to is blocked
     	(move-in-direction *player* directions)
+   		(get-line-of-sight *player*)
     	(monsters-turn)
     	;update the display
     	(display)))
 
 (defun monsters-turn ()
 	(loop for monster in *monsters* 
-		do (find-path monster (slot-value *player* 'tile))
-		(move-in-direction monster (elt *direction-list* 0))
-		(setf *direction-list* (remove (elt *direction-list* 0) *direction-list*))
+		do 
+		(get-line-of-sight monster)
+		(if (slot-value monster 'can-see-player) (find-path monster (slot-value *player* 'tile)))
+		(when (> (length (slot-value monster 'direction-list)) 0)
+		(move-in-direction monster (elt (slot-value monster 'direction-list) 0))
+		(setf (slot-value monster 'direction-list) (remove (elt (slot-value monster 'direction-list) 0) (slot-value monster 'direction-list)))
+		)
 		)
 	)
 
@@ -257,7 +290,14 @@ x")
 	(xp
 		:initform 0)
 	tile
-	))
+	(line-of-sight
+		:initform (list))
+	(direction-list
+		:initform (list))
+	(can-see-player
+		:initform nil)
+	)
+)	
 
 (defclass tile ()
 	((y-pos
@@ -269,7 +309,11 @@ x")
 	(character
 		:initform nil)
 	(path-value
-		:initform 0)))
+		:initform 0)
+	(visible
+		:initform nil)
+	(explored
+		:initform nil)))
 
 ;This is perhaps the least elegant way to do this imaginable
 (defun init-player (y x)
@@ -328,16 +372,17 @@ x")
 (defun clear-path-values ()
 	(loop for row across *map*
 		do(loop for tile across row
-			do(setf (slot-value tile 'path-value) 0)
-			)
-		)
-	)
+			do(setf (slot-value tile 'path-value) 0))))
+
+(defun clear-visibility()
+	(loop for row across *map*
+		do(loop for tile across row
+			do(setf (slot-value tile 'visible) nil))))
 
 (defun find-path (creature target)
 	(defparameter *current-tile* (slot-value creature 'tile))
 	(defparameter *origin-tile* (slot-value creature 'tile))
 	(defparameter *unexplored-tiles* (list))
-	(defparameter *direction-list* (list))
 	(clear-path-values)
 
 	(loop while (not(eq *current-tile* target))
@@ -353,11 +398,56 @@ x")
 	(loop while (not(eq *current-tile* *origin-tile*))
 		do (loop for tile in (list-adjacent-tiles *current-tile*)
 			do (when (and (eq (slot-value tile 'path-value) (- (slot-value *current-tile* 'path-value) 1)) (or (eq tile *origin-tile*) (> (slot-value tile 'path-value) 0)))
-				(setf *direction-list* (append (list (list (- (slot-value *current-tile* 'y-pos) (slot-value tile 'y-pos)) (- (slot-value *current-tile* 'x-pos) (slot-value tile 'x-pos))))*direction-list*))
+				(setf (slot-value creature 'direction-list) (append (list (list (- (slot-value *current-tile* 'y-pos) (slot-value tile 'y-pos)) (- (slot-value *current-tile* 'x-pos) (slot-value tile 'x-pos))))(slot-value creature 'direction-list)))
 				(setf *current-tile* tile)
 				(return)
 				)
 			)
 		)
 
+	)
+
+(defun get-line-of-sight (character)
+	;set the character's line of sight to a list containing only the tile they are standing on
+	(setf (slot-value character 'line-of-sight) (list (slot-value character 'tile)))
+	
+	(setf (slot-value character 'can-see-player) nil)
+	
+	(if (eq character *player*)(clear-visibility))
+	
+	(defvar distance 8)
+	(defvar eps)
+	(defvar y)
+	(defvar tile)
+
+	(loop for direction from 0 to 7 do
+	(loop for q from 0 to distance do
+	(loop for p from 0 to q do
+	(loop for eps-start from 0 to q do
+	(setf y 0)
+	(setf eps eps-start)
+	(loop for x from 1 to distance do 
+		(setf eps (+ eps p))
+		(when (>= eps q)
+			(setf eps (- eps q))
+			(if (find direction (list 2 3 6 7)) (setf y (- y 1)) (setf y (+ y 1)))
+			)
+
+		(if (< direction 4)
+			(setf tile (elt (elt *map* (+ (slot-value character 'y-pos) y)) (+ (slot-value character 'x-pos) (if (oddp direction) (* x -1) x))))
+			(setf tile (elt (elt *map* (+ (slot-value character 'y-pos) (if (oddp direction) (* x -1) x))) (+ (slot-value character 'x-pos) y)))
+			)
+		(when (not (find tile (slot-value character 'line-of-sight)))
+			(push tile (slot-value character 'line-of-sight))
+			(nreverse (slot-value character 'line-of-sight))
+			(when (eq character *player*) 
+				(setf (slot-value tile 'visible) t)
+				(setf (slot-value tile 'explored) t)
+				)
+			(if (eq (slot-value tile 'character) *player*) (setf (slot-value character 'can-see-player) t))
+		)
+			
+
+		(if (char= (slot-value tile 'symbol) #\#) (return))
+		)))))
 	)
