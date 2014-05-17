@@ -191,11 +191,9 @@ x")
 		do(init-level))
 
 	(setf *map* (slot-value (elt *dungeon* 0) 'level-map))
-	
-	;(init-player 10 10)
+	(setf *monsters* (slot-value (elt *dungeon* 0) 'monsters))
 	(get-line-of-sight *player*)
-	;(init-goblin 13 10)
-	;load the map into the string parser
+	
 	;start curses
 	(connect-console)
 	;print out the screen
@@ -290,6 +288,7 @@ x")
 			(setf (slot-value (slot-value character 'tile) 'character) nil)
 			(defparameter *next-level* (elt *dungeon* (+ (slot-value character 'current-level) 1)))
 			(setf *map* (slot-value *next-level* 'level-map))
+			(setf *monsters* (slot-value *next-level* 'monsters))
 			(setf (slot-value character 'current-level) (+ (slot-value character 'current-level) 1))
 
 			(setf (slot-value character 'y-pos) (elt (slot-value *next-level* 'up-stairs) 0))
@@ -307,6 +306,7 @@ x")
 			(setf (slot-value (slot-value character 'tile) 'character) nil)
 			(defparameter *previous-level* (elt *dungeon* (- (slot-value character 'current-level) 1)))
 			(setf *map* (slot-value *previous-level* 'level-map))
+			(setf *monsters* (slot-value *previous-level* 'monsters))
 			(setf (slot-value character 'current-level) (- (slot-value character 'current-level) 1))
 
 			(setf (slot-value character 'y-pos) (elt (slot-value *previous-level* 'down-stairs) 0))
@@ -367,6 +367,7 @@ x")
 	(setf *log* (append *log* (list (format nil "~a has died." (slot-value departed 'name)))))
 	(if (eq departed *player*) (setf *done* t))
 	(setf *monsters* (remove departed *monsters*))
+	(setf (slot-value (elt *dungeon* (slot-value *player* 'current-level)) 'monsters) *monsters*)
 	(setf (slot-value (slot-value departed 'tile) 'character) nil))
 
 (defun log-message (input)
@@ -422,6 +423,8 @@ x")
 		:initarg :number)
 	down-stairs
 	up-stairs
+	(monsters
+		:initform (list))
 		)
 	)
 
@@ -441,7 +444,10 @@ x")
 	(setf (slot-value *level* 'up-stairs) *up-stairs*)
 	(setf *dungeon* (append *dungeon* (list *level*)))
 	(setf *map* (slot-value *level* 'level-map))
+
+	(setf *monsters* (list))
 	(unpack-creature-stack)
+	(setf (slot-value *level* 'monsters) *monsters*)
 	)
 
 ;This is perhaps the least elegant way to do this imaginable
