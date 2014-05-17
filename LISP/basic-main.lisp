@@ -1,9 +1,14 @@
 ;These will need to be moved later
+(load "level-generator.lisp")
 (defparameter *cursor-x* nil)
 (defparameter *cursor-y* nil)
 (defparameter *y* 0)
 (defparameter *x* 0)
 (defparameter *creature-stack* (list))
+(defparameter *down-stairs* (list 0 0))
+(defparameter *up-stairs* (list 0 0))
+
+(defparameter *dungeon* (list))
 
 ;This is our global map. (It's a vector of vectors!)
 (defparameter *map* (make-array 50 :fill-pointer 0))
@@ -66,6 +71,8 @@ x")
 ;Parameters: 	string (a string representing our map, as above)
 ;Returns: 		nothing (but updates our global map with correct info)
 (defun string-to-vector-map (input-string)
+	(defparameter *map* (make-array 50 :fill-pointer 0))
+
 	;y and x are going to be used for working our way through the input string and
 	;keeping track of the appropriate position in the map we're populating
 	(setf *x* 0)
@@ -87,6 +94,15 @@ x")
 					(setf *creature-stack* (append *creature-stack* (list (list *y* (grid-x *x*) (elt input-string *x*)))))
 					(setf (elt input-string *x*) #\.)
 				)
+				((#\>) (setf *down-stairs* (list *y* (grid-x *x*)))
+					(print "down")
+					(print (list *y* (grid-x *x*))) 
+					)
+				((#\<) (setf *up-stairs* (list *y* (grid-x *x*))) 
+					(print "up")
+										(print (list *y* (grid-x *x*))) 
+
+					)
 			)
 
 			;push the current character into our row vector
@@ -102,7 +118,9 @@ x")
 		(vector-push *row* *map*)
 		;increment y
 		;(is there seriously not a better way to do this?)
-		(setf *y* (+ *y* 1))))
+		(setf *y* (+ *y* 1)))
+	*map*
+	)
 
 (defun grid-x (x)
 	(if(> *y* 0)(- x (* (+ (length (elt *map* 0)) 1) *y*)) x)
@@ -145,7 +163,8 @@ x")
 			(>= (slot-value monster 'y-pos) (- (slot-value *player* 'y-pos) 8))
 			(<= (slot-value monster 'y-pos) (+ (slot-value *player* 'y-pos) 8))
 			(>= (slot-value monster 'x-pos) (- (slot-value *player* 'x-pos) 8))
-			(<= (slot-value monster 'x-pos) (+ (slot-value *player* 'x-pos) 8)))
+			(<= (slot-value monster 'x-pos) (+ (slot-value *player* 'x-pos) 8))
+			(slot-value (slot-value monster 'tile) 'visible))
 			(print-creature
 				monster 
 				(+(- (slot-value monster 'y-pos) (slot-value *player* 'y-pos)) (+ 8 y-start)) 
@@ -167,8 +186,12 @@ x")
 ;that constitutes the majority of the action
 (defun basic-main ()
 	;plunk the player down somewhere
-	(string-to-vector-map *map-string*)
-	(unpack-creature-stack)
+
+	(loop for i from 0 to 4
+		do(init-level))
+
+	(setf *map* (slot-value (elt *dungeon* 0) 'level-map))
+	
 	;(init-player 10 10)
 	(get-line-of-sight *player*)
 	;(init-goblin 13 10)
@@ -216,37 +239,84 @@ x")
 	;xp
 	(mvaddstr 4 39 (format nil "XP:~a" (slot-value *player* 'xp)))
 	;level of the dungeon
-	(mvaddstr 5 39 "Current Level: 0")
+	(mvaddstr 5 39 (format nil "Current Level:~a" (slot-value *player* 'current-level)))
 	;player's inventory
 	(mvaddstr 6 39 "Inventory:")
 	)
 
 ;This is our main in-game loop, it currently handles player commands and displays the map
 (defun main-loop ()
-	(loop
+	(defparameter *done* nil)
+	(loop while (not *done*)
+		do
 		;initialize a small vector for the directions we're going to move in this turn
-		(defvar directions (vector 0 0))
-		;get a character from the keyboard
-  		(case (curses-code-char (getch))
-  			;q means quit the game
-  			((#\q) (return))
-  			;different directions for different keystrokes
-  			;straight in any direction
-  			((#\s #\2) (setf directions (vector 1 0)))
-  			((#\w #\8) (setf directions (vector -1 0)))
-  			((#\d #\6) (setf directions (vector 0 1)))
-  			((#\a #\4) (setf directions (vector 0 -1)))
-  			;the diagonals
-  			((#\1) (setf directions (vector 1 -1)))
- 			((#\3) (setf directions (vector 1 1)))
-  			((#\7) (setf directions (vector -1 -1)))
-  			((#\9) (setf directions (vector -1 1))))
-  		;check to see if the square we're trying to move to is blocked
-    	(move-in-direction *player* directions)
-   		(get-line-of-sight *player*)
+		(player-turn)
     	(monsters-turn)
     	;update the display
     	(display)))
+
+(defun player-turn ()
+	(defvar directions (list 0 0))
+		;get a character from the keyboard
+  		(case (curses-code-char (getch))
+  			;q means quit the game
+  			((#\q) (setf *done* t))
+  			;different directions for different keystrokes
+  			;straight in any direction
+  			((#\s #\2) (setf directions (list 1 0)))
+  			((#\w #\8) (setf directions (list -1 0)))
+  			((#\d #\6) (setf directions (list 0 1)))
+  			((#\a #\4) (setf directions (list 0 -1)))
+  			;the diagonals
+  			((#\1) (setf directions (list 1 -1)))
+ 			((#\3) (setf directions (list 1 1)))
+  			((#\7) (setf directions (list -1 -1)))
+  			((#\9) (setf directions (list -1 1)))
+  			((#\5) (setf directions (list 0 0)))
+  			((#\>) (go-down-stairs *player*) 
+  				(setf directions (list 0 0)))
+  			((#\<) (go-up-stairs *player*)
+  				(setf directions (list 0 0)))
+  			)
+  		;check to see if the square we're trying to move to is blocked
+    	(if (not (equal (list 0 0) directions)) (move-in-direction *player* directions))
+   		(get-line-of-sight *player*)
+   		(heal-naturally *player*)
+	)
+
+(defun go-down-stairs (character)
+	(if (char= (slot-value (slot-value character 'tile) 'symbol) #\>)
+		(progn
+			(setf (slot-value (slot-value character 'tile) 'character) nil)
+			(defparameter *next-level* (elt *dungeon* (+ (slot-value character 'current-level) 1)))
+			(setf *map* (slot-value *next-level* 'level-map))
+			(setf (slot-value character 'current-level) (+ (slot-value character 'current-level) 1))
+
+			(setf (slot-value character 'y-pos) (elt (slot-value *next-level* 'up-stairs) 0))
+			(setf (slot-value character 'x-pos) (elt (slot-value *next-level* 'up-stairs) 1))
+			(setf (slot-value character 'tile) (elt (elt *map* (slot-value character 'y-pos)) (slot-value character 'x-pos)))
+			(setf (slot-value (slot-value character 'tile) 'character) character)
+			)
+		(log-message "You can't go down here")
+		)
+	)
+
+(defun go-up-stairs (character)
+	(if (char= (slot-value (slot-value character 'tile) 'symbol) #\<)
+		(progn
+			(setf (slot-value (slot-value character 'tile) 'character) nil)
+			(defparameter *previous-level* (elt *dungeon* (- (slot-value character 'current-level) 1)))
+			(setf *map* (slot-value *previous-level* 'level-map))
+			(setf (slot-value character 'current-level) (- (slot-value character 'current-level) 1))
+
+			(setf (slot-value character 'y-pos) (elt (slot-value *previous-level* 'down-stairs) 0))
+			(setf (slot-value character 'x-pos) (elt (slot-value *previous-level* 'down-stairs) 1))
+			(setf (slot-value character 'tile) (elt (elt *map* (slot-value character 'y-pos)) (slot-value character 'x-pos)))
+			(setf (slot-value (slot-value character 'tile) 'character) character)
+			)
+		(log-message "You can't go up here")
+		)
+	)
 
 (defun monsters-turn ()
 	(loop for monster in *monsters* 
@@ -257,6 +327,7 @@ x")
 		(move-in-direction monster (elt (slot-value monster 'direction-list) 0))
 		(setf (slot-value monster 'direction-list) (remove (elt (slot-value monster 'direction-list) 0) (slot-value monster 'direction-list)))
 		)
+		(heal-naturally monster)
 		)
 	)
 
@@ -294,6 +365,7 @@ x")
 
 (defun die (departed)
 	(setf *log* (append *log* (list (format nil "~a has died." (slot-value departed 'name)))))
+	(if (eq departed *player*) (setf *done* t))
 	(setf *monsters* (remove departed *monsters*))
 	(setf (slot-value (slot-value departed 'tile) 'character) nil))
 
@@ -320,6 +392,10 @@ x")
 		:initform (list))
 	(can-see-player
 		:initform nil)
+	(regen-counter
+		:initform 0)
+	(current-level
+		:initform 0)
 	)
 )	
 
@@ -339,6 +415,35 @@ x")
 	(explored
 		:initform nil)))
 
+(defclass level ()
+	(level-map 
+		:initarg :level-map
+	(number
+		:initarg :number)
+	down-stairs
+	up-stairs
+		)
+	)
+
+(defun init-level ()
+	(defparameter *level* (make-instance 'level 
+			:number (length *dungeon*)
+			))
+	(defparameter *new-level-map* (string-to-vector-map(generate-level 36 36 (= (length *dungeon*) 0))))
+
+	(defparameter *level-string* (make-array 0
+ 		:element-type 'character
+ 		:fill-pointer 0
+ 		:adjustable t))
+
+	(setf (slot-value *level* 'level-map) *new-level-map*)
+	(setf (slot-value *level* 'down-stairs) *down-stairs*)
+	(setf (slot-value *level* 'up-stairs) *up-stairs*)
+	(setf *dungeon* (append *dungeon* (list *level*)))
+	(setf *map* (slot-value *level* 'level-map))
+	(unpack-creature-stack)
+	)
+
 ;This is perhaps the least elegant way to do this imaginable
 (defun init-player (y x)
 	(defparameter *player* (make-instance 'creature))
@@ -349,7 +454,8 @@ x")
 	(setf (slot-value *player* 'x-pos) x)
 	(setf (slot-value *player* 'symbol) #\@)
 	(setf (slot-value *player* 'tile) (elt (elt *map* y) x))
-	(setf (slot-value (elt (elt *map* y) x)'character) *player*))
+	(setf (slot-value (elt (elt *map* y) x)'character) *player*)
+	(setf (slot-value *player* 'current-level) 0))
 
 
 (defun init-goblin (y x)
@@ -371,6 +477,16 @@ x")
 	(attrset :cred)
 	(mvaddch y x (slot-value creature 'symbol)) 
 	(attrset :cgray))
+
+(defun heal-naturally (creature)
+	(when (< (slot-value creature 'currenthp)(slot-value creature 'maxhp))
+		(setf (slot-value creature 'regen-counter) (+ 1 (slot-value creature 'regen-counter)))
+		(when (>= (slot-value creature 'regen-counter) 10)
+			(setf (slot-value creature 'currenthp) (+ 1 (slot-value creature 'currenthp)))
+			(setf (slot-value creature 'regen-counter) 0)
+			)
+		)
+	)
 
 ;curses helper functions
 (defun hline (y-start x-start symbol length)
