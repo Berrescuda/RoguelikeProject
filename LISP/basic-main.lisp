@@ -4,7 +4,7 @@
 (defparameter *cursor-y* nil)
 (defparameter *y* 0)
 (defparameter *x* 0)
-(defparameter *creature-stack* (list))
+(defparameter *object-stack* (list))
 (defparameter *down-stairs* (list 0 0))
 (defparameter *up-stairs* (list 0 0))
 
@@ -90,19 +90,12 @@ x")
 			do
 			(case (elt input-string *x*)
 
-				((#\g #\@)
-					(setf *creature-stack* (append *creature-stack* (list (list *y* (grid-x *x*) (elt input-string *x*)))))
+				((#\g #\@ #\%)
+					(setf *object-stack* (append *object-stack* (list (list *y* (grid-x *x*) (elt input-string *x*)))))
 					(setf (elt input-string *x*) #\.)
 				)
-				((#\>) (setf *down-stairs* (list *y* (grid-x *x*)))
-					(print "down")
-					(print (list *y* (grid-x *x*))) 
-					)
-				((#\<) (setf *up-stairs* (list *y* (grid-x *x*))) 
-					(print "up")
-										(print (list *y* (grid-x *x*))) 
-
-					)
+				((#\>) (setf *down-stairs* (list *y* (grid-x *x*))))
+				((#\<) (setf *up-stairs* (list *y* (grid-x *x*))))
 			)
 
 			;push the current character into our row vector
@@ -126,14 +119,18 @@ x")
 	(if(> *y* 0)(- x (* (+ (length (elt *map* 0)) 1) *y*)) x)
 	)
 
-(defun unpack-creature-stack ()
-	(loop while (> (length *creature-stack*) 0)
+(defun unpack-object-stack ()
+	(loop while (> (length *object-stack*) 0)
 	do
-	(case(elt (elt *creature-stack* 0) 2)
-		((#\g) (init-goblin (elt (elt *creature-stack* 0) 0) (elt (elt *creature-stack* 0) 1) ))
-		((#\@) (init-player (elt (elt *creature-stack* 0) 0) (elt (elt *creature-stack* 0) 1) ))
+	(case(elt (elt *object-stack* 0) 2)
+		((#\g) (init-goblin (elt (elt *object-stack* 0) 0) (elt (elt *object-stack* 0) 1) ))
+		((#\@) (init-player (elt (elt *object-stack* 0) 0) (elt (elt *object-stack* 0) 1) ))
+		((#\%) (setf (slot-value (elt (elt *map* (elt (elt *object-stack* 0) 0)) (elt (elt *object-stack* 0) 1)) 'items) 
+			
+			(list (make-instance 'item :symbol #\% :name "potion"))))
 		)
-	(setf *creature-stack* (remove (elt *creature-stack* 0) *creature-stack*))
+	(setf *object-stack* (remove (elt *object-stack* 0) *object-stack*))
+		
 	)
 )
 
@@ -148,6 +145,10 @@ x")
 			do (when(and (>= *y* 0) (>= *x* 0) (< *y* (length *map*)) (< *x* (length (elt *map* *y*))) (slot-value (elt (elt *map* *y*) *x*) 'explored) )
 				(if (not(slot-value (elt (elt *map* *y*) *x*) 'visible)) (attrset :cpurple))
 				(mvaddch *cursor-y* (* *cursor-x* 2) (slot-value (elt (elt *map* *y*) *x*) 'symbol))
+				(when (slot-value (elt (elt *map* *y*) *x*) 'items) 
+					(if (slot-value (elt (elt *map* *y*) *x*) 'visible) (attrset :cblue))
+					(mvaddch *cursor-y* (* *cursor-x* 2) (slot-value (elt (slot-value (elt (elt *map* *y*) *x*) 'items) 0) 'symbol))
+					)
 				(attrset :cgray))
 			(setf *cursor-x* (+ *cursor-x* 1))
 			(setf *x* (+ *x* 1)))
@@ -186,9 +187,9 @@ x")
 ;that constitutes the majority of the action
 (defun basic-main ()
 	;plunk the player down somewhere
-
 	(loop for i from 0 to 4
 		do(init-level))
+
 
 	(setf *map* (slot-value (elt *dungeon* 0) 'level-map))
 	(setf *monsters* (slot-value (elt *dungeon* 0) 'monsters))
@@ -240,6 +241,10 @@ x")
 	(mvaddstr 5 39 (format nil "Current Level:~a" (slot-value *player* 'current-level)))
 	;player's inventory
 	(mvaddstr 6 39 "Inventory:")
+	(loop for i from 0 to (- (length (slot-value *player* 'inventory)) 1)
+		do
+		(mvaddstr (+ 7 i) 39 (slot-value (elt (slot-value *player* 'inventory) i) 'name))
+		)
 	)
 
 ;This is our main in-game loop, it currently handles player commands and displays the map
@@ -275,12 +280,38 @@ x")
   				(setf directions (list 0 0)))
   			((#\<) (go-up-stairs *player*)
   				(setf directions (list 0 0)))
+  			((#\g) (grab-item *player*)
+  				(setf directions (list 0 0)))
+  			((#\u) (drink-potion *player*)
+  				(setf directions (list 0 0)))
   			)
   		;check to see if the square we're trying to move to is blocked
     	(if (not (equal (list 0 0) directions)) (move-in-direction *player* directions))
    		(get-line-of-sight *player*)
    		(heal-naturally *player*)
 	)
+
+(defun grab-item (character)
+	(if (> (length (slot-value (slot-value character 'tile) 'items)) 0) (progn
+		(setf (slot-value character 'inventory) (append (slot-value character 'inventory)
+			(list (elt (slot-value (slot-value character 'tile) 'items) 0))))
+		(setf (slot-value (slot-value character 'tile) 'items) (remove (elt (slot-value (slot-value character 'tile) 'items)0) (slot-value (slot-value character 'tile) 'items)))
+		(log-message (format nil "picked up a potion")))
+		(log-message "there are no items to grab here"))
+	)
+
+(defun drink-potion (character)
+	(if (> (length (slot-value character 'inventory)) 0)
+		(progn
+			(setf (slot-value character 'currenthp) (+ 5 (slot-value character 'currenthp)))
+		(if (< (slot-value character 'maxhp) (slot-value character 'currenthp))
+			(setf (slot-value character 'currenthp) (slot-value character 'maxhp)))
+		(log-message "you drink a potion")
+		(setf (slot-value *player* 'inventory) (remove (elt (slot-value *player* 'inventory) 0) (slot-value *player* 'inventory)))
+		)
+		(log-message "you don't have any items to use")
+	)
+)
 
 (defun go-down-stairs (character)
 	(if (char= (slot-value (slot-value character 'tile) 'symbol) #\>)
@@ -397,6 +428,16 @@ x")
 		:initform 0)
 	(current-level
 		:initform 0)
+	(inventory
+		:initform (list))
+	)
+)
+
+(defclass item ()
+	((symbol
+		:initarg :symbol)
+	(name
+		:initarg :name)
 	)
 )	
 
@@ -414,7 +455,9 @@ x")
 	(visible
 		:initform nil)
 	(explored
-		:initform nil)))
+		:initform nil)
+	(items
+		:initform (list))))
 
 (defclass level ()
 	(level-map 
@@ -432,6 +475,7 @@ x")
 	(defparameter *level* (make-instance 'level 
 			:number (length *dungeon*)
 			))
+
 	(defparameter *new-level-map* (string-to-vector-map(generate-level 36 36 (= (length *dungeon*) 0))))
 
 	(defparameter *level-string* (make-array 0
@@ -446,7 +490,8 @@ x")
 	(setf *map* (slot-value *level* 'level-map))
 
 	(setf *monsters* (list))
-	(unpack-creature-stack)
+	(unpack-object-stack)
+
 	(setf (slot-value *level* 'monsters) *monsters*)
 	)
 
