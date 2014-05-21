@@ -18,55 +18,6 @@
 
 (defparameter *log* (list "hello" "welcome to" "LISPCRAWL"))
 
-;This won't exist once we're done testing stuff
-(defparameter *map-string*
-"   ####                 ###               
-   #..############      #.#               
-   #.##..........#      #.#               
-   #.##.####.###.########.################
-   #.##.#  #.###.........................#
-   #.##.#  #.....########.################
-   #..>.####.#####      #.#               
-   #######g..#          #.#               
-         #.###          #.#               
-   ###   #.#            #.#               
-   #.##  #.#            #.#               
-   #..####@##############.#               
-   #.##...........<.......#               
-   #.##.####.###.########.#               
-   #.##.#  #.###.#      #.#               
-   #.##.#  #.....#      #.#               
-   #....####.#####      #.#               
-   #######...#          #.#               
-         #.###          #.#               
-         ###            ###               
-x")
-
-;"...............................
-;...............................
-;...............................
-;...............................
-;...............................
-;...............................
-;...............................
-;...............................
-;...............................
-;...............................
-;...............................
-;...............................
-;...............................
-;...............................
-;...............................
-;...............................
-;...............................
-;...............................
-;...............................
-;...............................
-;...............................
-;...............................
-;x")
-
-
 ;string-to-vector-map takes a string and populates our vector of vectors with it
 ;Parameters: 	string (a string representing our map, as above)
 ;Returns: 		nothing (but updates our global map with correct info)
@@ -110,29 +61,46 @@ x")
 		;when we hit a newline, push the row vector we've been building into our map 
 		(vector-push *row* *map*)
 		;increment y
-		;(is there seriously not a better way to do this?)
 		(setf *y* (+ *y* 1)))
 	*map*
 	)
 
+;grid-x is just a wrapper for the arithmetic that needs to be done to 
+;get the cursor's position in our string to be converted to an appropriate x coordinate
 (defun grid-x (x)
-	(if(> *y* 0)(- x (* (+ (length (elt *map* 0)) 1) *y*)) x)
+
+	(if(> *y* 0) ;If we're past the first row
+		;Return the cursor's value minus the width of the map 
+		;times the number of rows we've built
+		(- x (* (+ (length (elt *map* 0)) 1) *y*)) 
+		;Otherwise return x
+		x)
 	)
 
+;This function takes all of the characters and items that have been pushed on to our object stack,
+;and populates the current map with them.
 (defun unpack-object-stack ()
+	;We keep popping objects off our stack (not actually a stack, but I'm pretending it's one)
+	;until it's empty
 	(loop while (> (length *object-stack*) 0)
-	do
-	(case(elt (elt *object-stack* 0) 2)
-		((#\g) (init-goblin (elt (elt *object-stack* 0) 0) (elt (elt *object-stack* 0) 1) ))
-		((#\@) (init-player (elt (elt *object-stack* 0) 0) (elt (elt *object-stack* 0) 1) ))
-		((#\%) (setf (slot-value (elt (elt *map* (elt (elt *object-stack* 0) 0)) (elt (elt *object-stack* 0) 1)) 'items) 
-			
-			(list (make-instance 'item :symbol #\% :name "potion"))))
-		)
-	(setf *object-stack* (remove (elt *object-stack* 0) *object-stack*))
-		
-	)
-)
+		;We have a case for each object we could be given
+		;So we check the third element of the list we get from the stack 
+		;(the first two elements are it's x and y coordinates)
+		do (case(elt (elt *object-stack* 0) 2)
+				;g means goblin, so we put a goblin at map coordinates x and y, 
+				;which we grab from the list at the front of the stack (I need to stop calling it that)
+				((#\g) (init-goblin (elt (elt *object-stack* 0) 0) (elt (elt *object-stack* 0) 1) ))
+				;an @ symbol means the player, in much the same way as the goblin,
+				;we plunk the player down wherever the coordinates say
+				((#\@) (init-player (elt (elt *object-stack* 0) 0) (elt (elt *object-stack* 0) 1) ))
+				;The % symbol means we have a potion, and that's handled in a slightly different way
+				;we still get the x and y coordinates, but instead of calling an init function, 
+				;we modify the specific tile's item list, and put a potion there
+				((#\%) (setf (slot-value (elt (elt *map* (elt (elt *object-stack* 0) 0)) (elt (elt *object-stack* 0) 1)) 'items) 
+				(list (make-instance 'item :symbol #\% :name "potion")))))
+		;Once we've placed our object, it's time to take it off of our objects list
+		;so we just clip the first element off of it and start our loop over if there are any elements left
+		(setf *object-stack* (remove (elt *object-stack* 0) *object-stack*))))
 
 (defun display-screen(y-start x-start)
 	(setf *cursor-y* y-start)
