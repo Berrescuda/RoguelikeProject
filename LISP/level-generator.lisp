@@ -14,7 +14,7 @@
 	(place-in-room (elt *rooms* (random (length *rooms*))) #\>)
 
 	(loop for room in *rooms* do
-		;(if (= (random 4) 0) (place-in-room room #\g))
+		(if (= (random 4) 0) (place-in-room room #\g))
 		(if (= (random 7) 0) (place-in-room room #\%))
 		)
 
@@ -119,7 +119,6 @@
  		(vector-push-extend #\newline *level-string*)
  		)
  	(vector-push-extend #\x *level-string*)
- 		(print *level-string*)
  		*level-string*
 	)
 

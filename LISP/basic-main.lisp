@@ -102,65 +102,101 @@
 		;so we just clip the first element off of it and start our loop over if there are any elements left
 		(setf *object-stack* (remove (elt *object-stack* 0) *object-stack*))))
 
+;display-screen draws the main map of the game, complete with character in the center,
+;drawing the block of spaces around the player that fall within their field of vision
+;parameters: 	The y and x coordinates that on the terminal where the upper-left corner of the map will be drawn
 (defun display-screen(y-start x-start)
+	;the cursors will keep track of which position on the actual terminal we're currently on
 	(setf *cursor-y* y-start)
 	(setf *cursor-x* x-start)
+	;While *x* and *y* keep track of our coordinates inside the game level
 	(setf *y* (- (slot-value *player* 'y-pos) 8))
 	(setf *x* (- (slot-value *player* 'x-pos) 8))
 
+	;iterate over every row that will be displayed on the screen
 	(loop while(< *cursor-y* (+ 17 y-start)) 
+		;iterate over that row, printing the character at *y*, *x*
 		do(loop while(< *cursor-x* (+ 17 x-start)) 
-			do (when(and (>= *y* 0) (>= *x* 0) (< *y* (length *map*)) (< *x* (length (elt *map* *y*))) (slot-value (elt (elt *map* *y*) *x*) 'explored) )
+			;If we're going to print a character, a series of conditions have to be met.
+				;first, y and x must not be negative, we shouldn't try to print tiles that don't exist
+			do (when(and (>= *y* 0) (>= *x* 0) 
+				;second, x and y can't be *greater* than the width or height of the map,
+				;those tiles don't exist, we can't draw them
+				(< *y* (length *map*)) (< *x* (length (elt *map* *y*))) 
+				;third, the tile must have been seen by the player at least once
+				(slot-value (elt (elt *map* *y*) *x*) 'explored))
+				
+				;once all those conditionals are met, 
+				;if the tile isn't visible, draw it in purple 
+				;(because it has been explored, we just can't see it right now)
 				(if (not(slot-value (elt (elt *map* *y*) *x*) 'visible)) (attrset :cpurple))
+
+				;Actually draw the character at map[*y*][*x*] at position [*cursor-y*][*cursor-x*] on the screen.
 				(mvaddch *cursor-y* (* *cursor-x* 2) (slot-value (elt (elt *map* *y*) *x*) 'symbol))
+				;If the tile has items on it, print the symbol of the first item the tile has
 				(when (slot-value (elt (elt *map* *y*) *x*) 'items) 
+					;if the item is visible, it's blue, otherwise, still purple
 					(if (slot-value (elt (elt *map* *y*) *x*) 'visible) (attrset :cblue))
 					(mvaddch *cursor-y* (* *cursor-x* 2) (slot-value (elt (slot-value (elt (elt *map* *y*) *x*) 'items) 0) 'symbol))
 					)
+				;change the color of the characters we print back to gray
 				(attrset :cgray))
+			;Increment both x's
 			(setf *cursor-x* (+ *cursor-x* 1))
 			(setf *x* (+ *x* 1)))
-
+		
+		;After a row is done, increment both y's
 		(setf *cursor-y* (+ *cursor-y* 1))
 		(setf *y* (+ *y* 1))
 
+		;Then set both of the x values back to their initial states 
+		;(start printing on the left side of the screen again)
 		(setf *cursor-x* x-start)
 		(setf *x* (- (slot-value *player* 'x-pos) 8)))
 	
+	;for every monster on the level, print that monster where it is if we can see it
 	(loop for monster in *monsters*
 		do(if(and 
+			;if the monster's coordinates are within the bounds of what we can see
 			(>= (slot-value monster 'y-pos) (- (slot-value *player* 'y-pos) 8))
 			(<= (slot-value monster 'y-pos) (+ (slot-value *player* 'y-pos) 8))
 			(>= (slot-value monster 'x-pos) (- (slot-value *player* 'x-pos) 8))
 			(<= (slot-value monster 'x-pos) (+ (slot-value *player* 'x-pos) 8))
+			;and we can see it
 			(slot-value (slot-value monster 'tile) 'visible))
+			;print the monster
 			(print-creature
 				monster 
-				(+(- (slot-value monster 'y-pos) (slot-value *player* 'y-pos)) (+ 8 y-start)) 
+				;at on the square it occupies
+				(+(- (slot-value monster 'y-pos) (slot-value *player* 'y-pos)) (+ 8 y-start))
 				(*(+(- (slot-value monster 'x-pos) (slot-value *player* 'x-pos)) (+ 8 x-start)) 2))))
-
+	;print the player in the center of our screen
 	(print-creature *player* (+ 8 y-start) (+ 16 (* 2 x-start))))
 
-
-
-
-
+;draw-frame takes a y cord, an x cord, a height and a width, and then
+;draws a box according to those specifications
 (defun draw-frame (y-start x-start height width)
+	;draw the leftmost line
 	(vline (+ y-start 1) x-start #\| (- height 1))
+	;draw the rightmost line
 	(vline (+ y-start 1) (+ width x-start) #\| (- height 1))
+	;draw the bottom line
 	(hline (+ height y-start) x-start #\- width)
+	;draw the top line
 	(hline y-start x-start #\- width ))
 
 ;this is the function that starts the game, and calls the loop 
 ;that constitutes the majority of the action
 (defun basic-main ()
-	;plunk the player down somewhere
+	;Generate a small dungeon
 	(loop for i from 0 to 4
 		do(init-level))
 
-
+	;set the *map* parameter to the map of the first level
 	(setf *map* (slot-value (elt *dungeon* 0) 'level-map))
+	;set the *monsters* parameter to the monsters that exist on the first level
 	(setf *monsters* (slot-value (elt *dungeon* 0) 'monsters))
+	;determine the player's line of sight
 	(get-line-of-sight *player*)
 	
 	;start curses
@@ -169,10 +205,10 @@
 	(display)
 	;begin main loop
 	(main-loop)
-	;end curses
+	;end curses once the player is done
 	(endwin))
 
-;display handles everything that happens on the screen
+;display handles all of the visual stuff that happens on the screen
 (defun display()
 	;clear the string
 	(erase)
@@ -182,6 +218,7 @@
 	(display-screen 1 1)
 	;draw a box around the log zone
 	(draw-frame 19 0 4 36)
+	;draw the last three entries in the log
 	(mvaddstr 20 1 (elt (reverse *log*) 2))
 	(mvaddstr 21 1 (elt (reverse *log*) 1))
 	(mvaddstr 22 1 (elt (reverse *log*) 0))
@@ -199,24 +236,28 @@
 	;This prints the player's health bar,
 	;The way I'm calculating the length of 
 	;the bar here isn't going to cut it when 
-	;the player's max-hp can actually increase
+	;the player's max-hp can actually increase, but for now it's fine
 	(hline 2 42 #\= (slot-value *player* 'currenthp))
 	(attrset :cgray)
+	;print the player's max and current hp
 	(mvaddstr 2 53 (format nil "~a/~a" (slot-value *player* 'currenthp) (slot-value *player* 'maxhp)))
 	;xp
 	(mvaddstr 4 39 (format nil "XP:~a" (slot-value *player* 'xp)))
-	;level of the dungeon
+	;level of the dungeon the player is on
 	(mvaddstr 5 39 (format nil "Current Level:~a" (slot-value *player* 'current-level)))
 	;player's inventory
 	(mvaddstr 6 39 "Inventory:")
+	;print the name of every item in the inventory
 	(loop for i from 0 to (- (length (slot-value *player* 'inventory)) 1)
 		do
 		(mvaddstr (+ 7 i) 39 (slot-value (elt (slot-value *player* 'inventory) i) 'name))
 		)
 	)
 
-;This is our main in-game loop, it currently handles player commands and displays the map
+;This is our main in-game loop, the player takes a turn, the monsters take a turn,
+;and the screen is updated.
 (defun main-loop ()
+	;when the player is done, the game is over
 	(defparameter *done* nil)
 	(loop while (not *done*)
 		do
@@ -226,7 +267,11 @@
     	;update the display
     	(display)))
 
+;This is the function that handles the player's turn.
+;It waits for input and then takes actions for the player
+;based on what character is entered
 (defun player-turn ()
+	;initialize a small list of directions
 	(defvar directions (list 0 0))
 		;get a character from the keyboard
   		(case (curses-code-char (getch))
@@ -234,49 +279,75 @@
   			((#\q) (setf *done* t))
   			;different directions for different keystrokes
   			;straight in any direction
-  			((#\s #\2) (setf directions (list 1 0)))
-  			((#\w #\8) (setf directions (list -1 0)))
-  			((#\d #\6) (setf directions (list 0 1)))
-  			((#\a #\4) (setf directions (list 0 -1)))
+  			((#\s #\2) (setf directions (list 1 0)))	;down
+  			((#\w #\8) (setf directions (list -1 0)))	;up
+  			((#\d #\6) (setf directions (list 0 1)))	;right
+  			((#\a #\4) (setf directions (list 0 -1)))	;left
+  			
   			;the diagonals
-  			((#\1) (setf directions (list 1 -1)))
- 			((#\3) (setf directions (list 1 1)))
-  			((#\7) (setf directions (list -1 -1)))
-  			((#\9) (setf directions (list -1 1)))
+  			((#\1) (setf directions (list 1 -1)))		;down-left
+ 			((#\3) (setf directions (list 1 1)))		;down-right
+  			((#\7) (setf directions (list -1 -1)))		;up-left
+  			((#\9) (setf directions (list -1 1)))		;up-right
+  			
+  			;don't move, pass the turn
   			((#\5) (setf directions (list 0 0)))
+
+  			;special actions
+  			;go up or down stairs
   			((#\>) (go-down-stairs *player*) 
   				(setf directions (list 0 0)))
   			((#\<) (go-up-stairs *player*)
   				(setf directions (list 0 0)))
+
+  			;grab and use items
   			((#\g) (grab-item *player*)
   				(setf directions (list 0 0)))
   			((#\u) (drink-potion *player*)
   				(setf directions (list 0 0)))
   			)
-  		;check to see if the square we're trying to move to is blocked
+  		;check to see if the square we're trying to move to is blocked,
+  		;if it's not, move into that square
     	(if (not (equal (list 0 0) directions)) (move-in-direction *player* directions))
+    	;refresh line of sight
    		(get-line-of-sight *player*)
+   		;regenerate slowly
    		(heal-naturally *player*)
 	)
 
+;Our grab item function takes a character and grabs whatever item is on it's current tile
 (defun grab-item (character)
-	(if (> (length (slot-value (slot-value character 'tile) 'items)) 0) (progn
-		(setf (slot-value character 'inventory) (append (slot-value character 'inventory)
-			(list (elt (slot-value (slot-value character 'tile) 'items) 0))))
-		(setf (slot-value (slot-value character 'tile) 'items) (remove (elt (slot-value (slot-value character 'tile) 'items)0) (slot-value (slot-value character 'tile) 'items)))
-		(log-message (format nil "picked up a potion")))
+	;if there is an item, pick it up
+	(if (> (length (slot-value (slot-value character 'tile) 'items)) 0) 
+		(progn
+			;add the item to the character's inventory
+			(setf (slot-value character 'inventory) (append (slot-value character 'inventory)
+				(list (elt (slot-value (slot-value character 'tile) 'items) 0))))
+			;remove the item from the tile's list of items
+			(setf (slot-value (slot-value character 'tile) 'items) (remove (elt (slot-value (slot-value character 'tile) 'items)0) (slot-value (slot-value character 'tile) 'items)))
+			;let the player know they have a new item
+			(log-message (format nil "picked up a potion")))
+		;Otherwise, send a message to the player.
 		(log-message "there are no items to grab here"))
 	)
 
+;Our drink-potion function takes a character and makes them use a potion in their inventory if they can.
 (defun drink-potion (character)
+	;if the character has any items in their inventory
 	(if (> (length (slot-value character 'inventory)) 0)
 		(progn
+			;Increase the character's hp by 5
 			(setf (slot-value character 'currenthp) (+ 5 (slot-value character 'currenthp)))
-		(if (< (slot-value character 'maxhp) (slot-value character 'currenthp))
-			(setf (slot-value character 'currenthp) (slot-value character 'maxhp)))
-		(log-message "you drink a potion")
-		(setf (slot-value *player* 'inventory) (remove (elt (slot-value *player* 'inventory) 0) (slot-value *player* 'inventory)))
-		)
+			;but not above the maximum
+			(if (< (slot-value character 'maxhp) (slot-value character 'currenthp))
+				(setf (slot-value character 'currenthp) (slot-value character 'maxhp)))
+			;message the player (in the futrue this should use the name of the 
+			;character drinking the potion instead of "you" but seeing as how
+			;only the player can drink potions right now, this will be fine)
+			(log-message "you drink a potion")
+			;remove the potion from the player's inventory
+			(setf (slot-value *player* 'inventory) (remove (elt (slot-value *player* 'inventory) 0) (slot-value *player* 'inventory))))
+		;if there are no items in the player's inventory, let the player know and exit our function
 		(log-message "you don't have any items to use")
 	)
 )
