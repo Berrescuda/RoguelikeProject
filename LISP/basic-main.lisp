@@ -196,7 +196,7 @@
 	(setf *map* (slot-value (elt *dungeon* 0) 'level-map))
 	;set the *monsters* parameter to the monsters that exist on the first level
 	(setf *monsters* (slot-value (elt *dungeon* 0) 'monsters))
-	;determine the player's line of sight
+
 	(get-line-of-sight *player*)
 	
 	;start curses
@@ -352,51 +352,90 @@
 	)
 )
 
+;go-down-stairs takes a character and attempts to go down a staircase
+;Parameters 	the character taking the action
+;Returns 		nothing
 (defun go-down-stairs (character)
+	;If the character is standing on a down-staircase:
 	(if (char= (slot-value (slot-value character 'tile) 'symbol) #\>)
 		(progn
+			;Set the tile the character is standing on to hold no character
 			(setf (slot-value (slot-value character 'tile) 'character) nil)
+			;get the next level we're going to from the dungeon list
 			(defparameter *next-level* (elt *dungeon* (+ (slot-value character 'current-level) 1)))
+			;Set the global *map* variable to the map of the next level
 			(setf *map* (slot-value *next-level* 'level-map))
+			;Update the list of monsters to the monsters on the next level
+			;(This could stand to be refactored)
 			(setf *monsters* (slot-value *next-level* 'monsters))
+			;Set the character's current-level value to the level number of the new level
 			(setf (slot-value character 'current-level) (+ (slot-value character 'current-level) 1))
 
+			;Set the character's x and y position to the coordinates of the next level's up staircase
 			(setf (slot-value character 'y-pos) (elt (slot-value *next-level* 'up-stairs) 0))
 			(setf (slot-value character 'x-pos) (elt (slot-value *next-level* 'up-stairs) 1))
+
+			;Set the tile field of our character to the new tile we're standing on
 			(setf (slot-value character 'tile) (elt (elt *map* (slot-value character 'y-pos)) (slot-value character 'x-pos)))
+			;Set the character field of our new tile to our character
 			(setf (slot-value (slot-value character 'tile) 'character) character)
 			)
+		;if we're not on a down staircase, let the player know.
 		(log-message "You can't go down here")
 		)
 	)
 
+;go-up-stairs takes a character and attempts to go up a staircase
+;Parameters 	the character taking the action
+;Returns 		nothing
 (defun go-up-stairs (character)
+	;If the character is standing on an up-staircase:
 	(if (char= (slot-value (slot-value character 'tile) 'symbol) #\<)
 		(progn
+			;Set the tile the character is standing on to hold no character
 			(setf (slot-value (slot-value character 'tile) 'character) nil)
+			;get the next level we're going to from the dungeon list
 			(defparameter *previous-level* (elt *dungeon* (- (slot-value character 'current-level) 1)))
+			;Set the global *map* variable to the map of the new level
 			(setf *map* (slot-value *previous-level* 'level-map))
+			;Update the list of monsters to the monsters on the new level
+			;(This could stand to be refactored)
 			(setf *monsters* (slot-value *previous-level* 'monsters))
+			;Set the character's current-level value to the level number of the new level
 			(setf (slot-value character 'current-level) (- (slot-value character 'current-level) 1))
 
+			;Set the character's x and y position to the coordinates of the next level's up staircase
 			(setf (slot-value character 'y-pos) (elt (slot-value *previous-level* 'down-stairs) 0))
 			(setf (slot-value character 'x-pos) (elt (slot-value *previous-level* 'down-stairs) 1))
+			;Set the tile field of our character to the new tile we're standing on
 			(setf (slot-value character 'tile) (elt (elt *map* (slot-value character 'y-pos)) (slot-value character 'x-pos)))
+			;Set the character field of our new tile to our character
 			(setf (slot-value (slot-value character 'tile) 'character) character)
 			)
+		;If we're not standing on an up staircase, let the player know.
 		(log-message "You can't go up here")
 		)
 	)
 
+;monsters-turn loops throuh every monster on the map and gives them actions to perform if applicable
+;Parameters: 	none
+;returns: 		nothing important
 (defun monsters-turn ()
+	;For each monster on the level
 	(loop for monster in *monsters* 
-		do 
+		do
+		;update the monster's line of sight
 		(get-line-of-sight monster)
+		;If the monster can see the player, find a shortest path to the player
 		(if (slot-value monster 'can-see-player) (find-path monster (slot-value *player* 'tile)))
+		;If the monster is currently following a path,
 		(when (> (length (slot-value monster 'direction-list)) 0)
+		;-then move along the path
 		(move-in-direction monster (elt (slot-value monster 'direction-list) 0))
-		(setf (slot-value monster 'direction-list) (remove (elt (slot-value monster 'direction-list) 0) (slot-value monster 'direction-list)))
-		)
+		;Remove the direction we just followed from the monster's direction list
+		(setf (slot-value monster 'direction-list) (remove (elt (slot-value monster 'direction-list) 0) 
+			(slot-value monster 'direction-list))))
+		;Heal one hp every ten turns
 		(heal-naturally monster)
 		)
 	)
@@ -412,272 +451,511 @@
 	;This line of code checks to see if the square pointed to by directions is a wall
 	(CHAR/= (slot-value *target-tile* 'symbol) #\#))
 
-(defun move-creature (creature directions)
+;shift-creature moves a creature to a new tile
+;Parameters: 	The creature that's moving, a list detailing the direction it's moving in
+;Returns: 		nothing interesting
+(defun shift-creature (creature directions)
+	;Figure out which tile we're trying to move to.
 	(defparameter *target-tile* (elt (elt *map* (+ (slot-value creature 'y-pos) (elt directions 0))) (+ (slot-value creature 'x-pos) (elt directions 1))))
+	;set the current tile's character value to nothing
 	(setf (slot-value (slot-value creature 'tile) 'character) nil)
+	;update the character's y and x positions
 	(setf (slot-value creature 'y-pos) (+ (slot-value creature 'y-pos) (elt directions 0)))
     (setf (slot-value creature 'x-pos) (+ (slot-value creature 'x-pos) (elt directions 1)))
+	;set the creature's tile value to the tile we're moving to
 	(setf (slot-value creature 'tile) *target-tile*)
-	(setf (slot-value *target-tile* 'character) creature)
-	)
+	;set the new tile's character value to the character
+	(setf (slot-value *target-tile* 'character) creature))
 
+;move-in-direction checks if a creature can move somewhere,
+;and if the move they want to make should result in an attack
+;Parameters: 	The creature that's moving, a list detailing the direction it's moving in
+;Returns: 		nothing interesting
 (defun move-in-direction (creature directions)
+    ;if the tile we're moving to isn't a wall, we move our player to there
 	(if(not-blocked creature directions)
-    		;if it's not blocked, we move our player to the square
-    		(if (not(slot-value *target-tile* 'character)) (move-creature creature directions) (attack creature (slot-value *target-tile* 'character)))))
+		;If the tile doesn't have a character in it, move there
+    	(if (not(slot-value *target-tile* 'character)) 
+    		(shift-creature creature directions)
+    		;otherwise, attack that character instead
+    		(attack creature (slot-value *target-tile* 'character)))))
 
+;attack makes one creature to attack another
+;Parameters: 	The attack creature and the defending creature
+;Returns: 		Nothing interesting
 (defun attack (attacker defender)
+	;Print what's happening to the log
 	(log-message (format nil "~a attacks ~a." (slot-value attacker 'name) (slot-value defender 'name)))
+	;Reduce the defender's hp by the power of the attacker
 	(setf (slot-value defender 'currenthp) (- (slot-value defender 'currenthp) (slot-value attacker 'power)))
+	;If the defender has less than 0 health, they're dead
 	(when(<= (slot-value defender 'currenthp) 0)(die defender)
+		;increment the attacker's xp by one
 		(setf (slot-value attacker 'xp) (+ (slot-value attacker 'xp) 1)))
 	)
 
+;die removes a character from the map
+;Parameters: 	The creature that's dying
+;Returns: 		Nothing interesting
 (defun die (departed)
+	;update the log to reflect that a character is dead
 	(setf *log* (append *log* (list (format nil "~a has died." (slot-value departed 'name)))))
+	;If the player's dead, we're done, so we set our *done* variable 
+	;to true so the game knows to quit the main loop
 	(if (eq departed *player*) (setf *done* t))
+	;Otherwise the dead character is a monster, 
+	;and we should remove it from the current list of monsters
 	(setf *monsters* (remove departed *monsters*))
+	;For posterity we should also remove it from the list that exists within the dungeon list
 	(setf (slot-value (elt *dungeon* (slot-value *player* 'current-level)) 'monsters) *monsters*)
+	;Set the character value of the tile the character was standing on to nothing
 	(setf (slot-value (slot-value departed 'tile) 'character) nil))
 
+;log-message appends a string to our log, which will be printed 
+;to the screen during the next iteration of the display loop
+;Parameters: 	A string to append to the log.
+;Returns: 		Nothing interesting
 (defun log-message (input)
 (setf *log* (append *log* (list input))))
+
 ;Class Definitions
 
-;base creature class
+;the class that currently encompasses all creatures
 (defclass creature () 
-	(maxhp
-	currenthp
-	x-pos
-	y-pos
+	;the different fields of the creature
+	(maxhp 		;Character's maximum hp (generally doesn't change)
+	currenthp 	;Character's current hp (changes constantly)
+	
+	;Character's x and y position
+	(y-pos
+		:initarg :y-pos)
+	(x-pos 
+		:initarg :x-pos) 
 	name
-	symbol
-	(power
-		:initform 1)
-	(xp
-		:initform 0)
-	tile
-	(line-of-sight
-		:initform (list))
+	symbol 		;The symbol that represents the character on the map
+	(power 		;The amount of damage the character deals in combat
+		:initform 1) ;Generally initialized at 0
+	
+	(xp 		;The amount of experience points the character has earned
+		:initform 0) ; always starts at 0
+
+	tile 		;The tile the character is standing on
+	
+	(can-see-player 	;a boolean value that tells whether or not a monster
+		:initform nil) 	;can currently see the player character (defaults to false)
+						
+	
+	(regen-counter   	;A counter that keeps track of how close the
+		:initform 0)  	;character currently is to healing one hp
+	
+	(current-level 		;Keeps track of what level the character is currently on
+		:initform 0)  	;The player starts on level 0, and the monsters don't 
+						;currently use this value, so it inits to 0
+	
+	;A list of tiles the character can see (doesn't actually wind up getting used, 
+	;and keeping track of it wastes a lot of time, so I'm disabling it for now)				
+	;(line-of-sight 			
+	;	:initform (list)) 	
+	
+	;a list of directions that keeps track of where 
+	;the character is planning on going next
 	(direction-list
 		:initform (list))
-	(can-see-player
-		:initform nil)
-	(regen-counter
-		:initform 0)
-	(current-level
-		:initform 0)
+	
+	;A list of items the character currently has
 	(inventory
-		:initform (list))
-	)
-)
+		:initform (list))))
 
+;A simple class for representing items
 (defclass item ()
+	;Items have a symbol that represents them on the map.
 	((symbol
 		:initarg :symbol)
+	;And they have a name
 	(name
-		:initarg :name)
-	)
-)	
+		:initarg :name)))	
 
+;Our class for the objects that 
+;compose each space on the map
 (defclass tile ()
+	;They know their coordinates on the map
 	((y-pos
 		:initarg :y-pos) 
 	(x-pos
 		:initarg :x-pos)
+
+	;They inherently display a certain symbol
 	(symbol
 		:initarg :symbol)
+	
+	;They know what character is standing on them.
 	(character
-		:initform nil)
+		:initform nil) ;(Sensibly, this defaults to nobody)
+
+	;While the shortest path to a plac is being determined,
+	;Tiles can know how far they are from the origin square
 	(path-value
 		:initform 0)
+	;A flag to show if they can currently be seen by the player
 	(visible
 		:initform nil)
+	;A flag to show if the player can remember seeing them ever
 	(explored
 		:initform nil)
+	;A list of items on the tile
 	(items
 		:initform (list))))
 
+;Our class of objects that keeps track of 
+;information about each level of the dungeon
 (defclass level ()
-	(level-map 
+	;A map of the level (a vector of vectors of tile objects)
+	(level-map
 		:initarg :level-map
+	;Their position in the dungeon 
+	;(a lower number is closer to top of the dungeon)
 	(number
 		:initarg :number)
+	;The coordinates of the level's staircases
+	;(We keep track of these so we know where to put
+	;characters who are traveling to different levels)
 	down-stairs
 	up-stairs
+	;A list of monsters that exist on the level
 	(monsters
-		:initform (list))
-		)
-	)
+		:initform (list))))
 
+;Our init-level function creates a new level, prepares it, 
+;and appropriately places it in the dungeon
+;Parameters: 	None
+;Returns: 		Nothing Interesting
 (defun init-level ()
+	;Create the new level, setting it's level number to 
+	;the current length of the dungeon list
+	;(This should make it match it's index in the dungeon)
 	(defparameter *level* (make-instance 'level 
-			:number (length *dungeon*)
-			))
+			:number (length *dungeon*)))
 
+	;Create a new map by generating a new level that's 36 squares by 36 squares
+	;Passing in the length of the dungeon so the level-generator can know whether
+	;or not to put the player in the new map
 	(defparameter *new-level-map* (string-to-vector-map(generate-level 36 36 (= (length *dungeon*) 0))))
 
-	(defparameter *level-string* (make-array 0
- 		:element-type 'character
- 		:fill-pointer 0
- 		:adjustable t))
-
+	;Give the new level map to our new level
 	(setf (slot-value *level* 'level-map) *new-level-map*)
+	;Tell the new level where it's down and up staircases are
 	(setf (slot-value *level* 'down-stairs) *down-stairs*)
 	(setf (slot-value *level* 'up-stairs) *up-stairs*)
+	;Add the level to the end of the dungeon list
 	(setf *dungeon* (append *dungeon* (list *level*)))
+	;Set the global map to the new level map briefly
 	(setf *map* (slot-value *level* 'level-map))
-
+	;Set the global list of monsters to an empty list
 	(setf *monsters* (list))
+	;Populate the new level with items and characters
 	(unpack-object-stack)
+	;Assign the new list of monsters to the new level
+	(setf (slot-value *level* 'monsters) *monsters*))
 
-	(setf (slot-value *level* 'monsters) *monsters*)
-	)
-
-;This is perhaps the least elegant way to do this imaginable
+;Init-player creates a new creature, sets its parameters 
+;to those the player should have, 
+;and then sets the global player variable to that creature
+;Parameters 	y and x position to put the player at
+;Returns 		nothing interesting
 (defun init-player (y x)
-	(defparameter *player* (make-instance 'creature))
+	;Create the creature object
+	(defparameter *player* (make-instance 'creature :y-pos y :x-pos x))
+	;set it's name
 	(setf (slot-value *player* 'name) "foobar")
+	;set max and current hp
 	(setf (slot-value *player* 'maxhp) 10)
 	(setf (slot-value *player* 'currenthp) 10)
-	(setf (slot-value *player* 'y-pos) y)
-	(setf (slot-value *player* 'x-pos) x)
+	;set it's symbol to '@'
 	(setf (slot-value *player* 'symbol) #\@)
+	;Update it's tile field
 	(setf (slot-value *player* 'tile) (elt (elt *map* y) x))
-	(setf (slot-value (elt (elt *map* y) x)'character) *player*)
-	(setf (slot-value *player* 'current-level) 0))
-
-
+	;Update the tile's character field
+	(setf (slot-value (elt (elt *map* y) x)'character) *player*))
+	
+;Init-player creates a new creature, sets its parameters 
+;to those a goblin should have, and puts it on the map
+;Parameters 	y and x position to put the player at
+;Returns 		nothing interesting
 (defun init-goblin (y x)
-	(defparameter *goblin* (make-instance 'creature))
+	;create the new instance
+	(defparameter *goblin* (make-instance 'creature :y-pos y :x-pos x))
+	;set it's name
 	(setf (slot-value *goblin* 'name) "Space goblin")
+	;set current and max hp
 	(setf (slot-value *goblin* 'maxhp) 5)
 	(setf (slot-value *goblin* 'currenthp) 5)
-	(setf (slot-value *goblin* 'y-pos) y)
-	(setf (slot-value *goblin* 'x-pos) x)
+	;set it's symbol to 'g'
 	(setf (slot-value *goblin* 'symbol) #\g)
+	;update the goblin's tile field
 	(setf (slot-value *goblin* 'tile) (elt (elt *map* y) x))
+	;update that tile's character field
 	(setf (slot-value (elt (elt *map* y) x)'character) *goblin*)
+	;Add the goblin to the current list of monsters
+	(setf *monsters* (append *monsters* (list *goblin*))))
 
-	;feels a little pythonic, but it does what I want it to do
-	(setf *monsters* (append *monsters* (list *goblin*)))
-	)
-
+;print-creature puts a creature's symbol in 
+;the appropriate color on the screen
+;Parameters: 	The y and x positions on the screen, the creature
+;Returns: 		Nothing interesting
 (defun print-creature (creature y x)
+	;All creatures are red right now
 	(attrset :cred)
+	;Print the character
 	(mvaddch y x (slot-value creature 'symbol)) 
+	;Reset the color to gray
 	(attrset :cgray))
 
+;heal-naturally updates a creature's regeneration counter,
+;allowing that creature to heal 1 hp every ten turns
+;Parameters: 	The creature to heal
+;Returns: 		Nothing interesting
 (defun heal-naturally (creature)
+	;When the creature's hp is less than it's max, increment the regen counter
 	(when (< (slot-value creature 'currenthp)(slot-value creature 'maxhp))
 		(setf (slot-value creature 'regen-counter) (+ 1 (slot-value creature 'regen-counter)))
+		;When the regen counter is at ten, heal the character and set the regen-counter back to 0
 		(when (>= (slot-value creature 'regen-counter) 10)
 			(setf (slot-value creature 'currenthp) (+ 1 (slot-value creature 'currenthp)))
-			(setf (slot-value creature 'regen-counter) 0)
-			)
-		)
-	)
+			(setf (slot-value creature 'regen-counter) 0))))
 
 ;curses helper functions
+
+;hline draws a horizontal line
+;Parameters: 	the y and x positions to star the line at, 
+; 				the symbol to draw the line with, and the length of the line
+;Returns: 		Nothing interesting
 (defun hline (y-start x-start symbol length)
-	(loop for x from x-start to (+ x-start length) do (mvaddch y-start x symbol))
-	)
+	;Draws a number of characters equal to the length 
+	;of the line to the right starting from the initial x position
+	(loop for x from x-start to (+ x-start length) 
+		do (mvaddch y-start x symbol)))
 
+;hline draws a horizontal line
+;Parameters: 	the y and x positions to star the line at, 
+; 				the symbol to draw the line with, and the length of the line
+;Returns: 		Nothing interesting
 (defun vline (y-start x-start symbol length)
-	(loop for y from y-start to (+ y-start length) do (mvaddch y x-start symbol))
-	)
+	;draws a number of characters equal to the length 
+	;of the line down from the initial y position
+	(loop for y from y-start to (+ y-start length) 
+		do (mvaddch y x-start symbol)))
 
+;Our list-adjacent-tiles function takes a tile,
+;and gives back a list of all the tiles next to that tile
+;Parameters: 	the tile whose neighbors we want
+;Returns: 		a list of the tile's neighbors
 (defun list-adjacent-tiles (center-tile)
-	(defparameter adjacent-tiles (list))
+	;Initialize our list of neighbor tiles
+	(defparameter *adjacent-tiles* (list))
+
+	;starting at the tile to the north-west of our current tile,
+	;work our way over each tile next to the center tile
 	(loop for y from (- (slot-value center-tile 'y-pos) 1) to (+ (slot-value center-tile 'y-pos) 1)
 		do(loop for x from (- (slot-value center-tile 'x-pos) 1) to (+ (slot-value center-tile 'x-pos) 1)
-			do(if (not(and (= y (slot-value center-tile 'y-pos)) (= x (slot-value center-tile 'x-pos)))) (setf adjacent-tiles
-							(append adjacent-tiles (list (elt (elt *map* y) x)))		
-						))	
-		)
-	)
-	adjacent-tiles
-)
+			;Don't add the center tile to the list
+			do(if (not(and (= y (slot-value center-tile 'y-pos)) (= x (slot-value center-tile 'x-pos))))
+				;add this tile to the list of adjacent tiles 
+				(setf *adjacent-tiles* (append *adjacent-tiles* (list (elt (elt *map* y) x)))))))
+	;Return the list of adjacent tiles
+	*adjacent-tiles*)
 
+;clear-path-values goes through every tile on the 
+;map and sets it's path-value to 0
+;Parameters: 	None
+;Returns: 		Nothing Interesting
 (defun clear-path-values ()
+	;For each tile
 	(loop for row across *map*
 		do(loop for tile across row
+			;Set the path-value to 0
 			do(setf (slot-value tile 'path-value) 0))))
 
+;clear-path-values goes through every tile on the 
+;map and sets it's visibility to false
+;Parameters: 	None
+;Returns: 		Nothing Interesting
 (defun clear-visibility()
+	;For each tile
 	(loop for row across *map*
 		do(loop for tile across row
+			;reset it's visibility
 			do(setf (slot-value tile 'visible) nil))))
 
+;find-path finds the shortest route from a creature to a location on the map
+;Parameters: 	the creature who wants to go somewhere, the tile they want to go to
+;Returns:		nothing, but updates the creature's list of directions
 (defun find-path (creature target)
+	;Define a tile variable that will be moved around to find the path
 	(defparameter *current-tile* (slot-value creature 'tile))
+	;Define the tile the creature is on as the origin
 	(defparameter *origin-tile* (slot-value creature 'tile))
+	;Initialize a list of tiles that should be explored next
 	(defparameter *unexplored-tiles* (list))
+	;Reset all path-values
 	(clear-path-values)
 
+	;Traverse tiles until we land on the target tile
 	(loop while (not(eq *current-tile* target))
-			do(loop for tile in (list-adjacent-tiles *current-tile*) 
+			;For every tile adjacent to the current tile
+			do(loop for tile in (list-adjacent-tiles *current-tile*)
+				;If the tile we're looking at in't a wall, and it's path value is zero 
+				;(indicating that we haven't gone over it already)
 				do (when (and (char/= (slot-value tile 'symbol) #\#) (= (slot-value tile 'path-value) 0))
-						(if (eq *current-tile* *origin-tile*) (setf (slot-value tile 'path-value) 1) (if (not(eq tile *origin-tile*)) (setf (slot-value tile 'path-value) (+ (slot-value *current-tile* 'path-value) 1))))
+						;If we're just starting, we set all tiles adjacent to the origin to 1 
+						;(this way we don't have to set the origin's path-value to 0, which would confuse the algorithm)
+						(if (eq *current-tile* *origin-tile*)
+							(setf (slot-value tile 'path-value) 1) 
+
+							;If the current tile isn't the origin, 
+							;and the tile we're looking at right now isn't either,
+							(if (not(eq tile *origin-tile*)) 
+								;set the path-value of the tile we're inspecting 
+								;to the current tile's value + 1
+								;(The tile we're looking at is one square further 
+								;away from the player than the current one)
+								(setf (slot-value tile 'path-value) (+ (slot-value *current-tile* 'path-value) 1))))
+						;Add the tile we're looking at to the list of tiles 
+						;which haven't been the *current-tile* yet
 						(setf *unexplored-tiles* (append *unexplored-tiles* (list tile)))
-						(if (eq tile target) (return)))
-				)
-			(if (and (> (length *unexplored-tiles*) 0) (not (eq *current-tile* target))) (progn 
-					(setf *current-tile* (elt *unexplored-tiles* 0)) (setf *unexplored-tiles* (remove *current-tile* *unexplored-tiles*))))
-			)
+						;If the tile we're looking at is the target tile, 
+						;we break out of this part of the algorithm
+						(if (eq tile target) 
+							(return))))
+			;If we haven't found the target tile, update the current tile to the first
+			;tile in our list of unexplored tiles and start the loop again
+			(when (and (> (length *unexplored-tiles*) 0) (not (eq *current-tile* target))) 
+					;update the current tile
+					(setf *current-tile* (elt *unexplored-tiles* 0))
+					;Remove the tile that is now the current tile from our unexplored list
+					(setf *unexplored-tiles* (remove *current-tile* *unexplored-tiles*))))
+	
+	;Work our way back from the target to the origin, 
+	;updating the creature's list of directions as we go	
 	(loop while (not(eq *current-tile* *origin-tile*))
+		;for each tile adjacent to the current tile
 		do (loop for tile in (list-adjacent-tiles *current-tile*)
-			do (when (and (eq (slot-value tile 'path-value) (- (slot-value *current-tile* 'path-value) 1)) (or (eq tile *origin-tile*) (> (slot-value tile 'path-value) 0)))
-				(setf (slot-value creature 'direction-list) (append (list (list (- (slot-value *current-tile* 'y-pos) (slot-value tile 'y-pos)) (- (slot-value *current-tile* 'x-pos) (slot-value tile 'x-pos))))(slot-value creature 'direction-list)))
+			;if the tile we're looking at has a path-value one less 
+			;than the current tile:
+			do (when (and (eq (slot-value tile 'path-value) (- (slot-value *current-tile* 'path-value) 1)) 
+				;if the ajacent tile's path-value isn't 0, set the current tile to that tile
+				(or (eq tile *origin-tile*) (> (slot-value tile 'path-value) 0)))
+				;add a set of directions to the creature's direction list
+				(setf (slot-value creature 'direction-list) 
+					(append
+						;The  
+						(list (list 
+							;the y direction you have to travel in to get from the 
+							;new current tile to the old one
+							(- (slot-value *current-tile* 'y-pos) (slot-value tile 'y-pos)) 
+							;the x direction you need to travel in
+							(- (slot-value *current-tile* 'x-pos) (slot-value tile 'x-pos))))
+					;append the new directions to the top of the direction-list
+					(slot-value creature 'direction-list)))
+				;set the *current-tile* to the new tile
 				(setf *current-tile* tile)
-				(return)
-				)
-			)
-		)
+				;Since we found a new tile we want to go to,
+				;we can break out of the inner loop and look 
+				;for the next tile to go to
+				(return)))))
 
-	)
-
+;get-line-of-sight updates a character's line of sight based on their position on the map
+;Parameters: 	The character who's line of sight we're updating
+;Returns: 		Nothing of interest, but has an effect on the object we pass it
 (defun get-line-of-sight (character)
+
+	;There's some disabled code in here that can be reactivated if we ever want
+	;each character to maintain a list of all the tiles they can see
 	;set the character's line of sight to a list containing only the tile they are standing on
-	(setf (slot-value character 'line-of-sight) (list (slot-value character 'tile)))
+	;(setf (slot-value character 'line-of-sight) (list (slot-value character 'tile)))
 	
+	;Assume the character can't see anything yet (so they can't see the player yet)
 	(setf (slot-value character 'can-see-player) nil)
+	;if the character is the player, clear each tile's visibility boolean
+	(if (eq character *player*)
+		(clear-visibility))
 	
-	(if (eq character *player*)(clear-visibility))
-	
+	;We can see 8 squares in any direction
 	(defvar distance 8)
+
+	;set a few variables that'll be used during the algorithm
 	(defvar eps)
 	(defvar y)
 	(defvar tile)
 
-	(loop for direction from 0 to 7 do
-	(loop for q from 0 to distance do
-	(loop for p from 0 to q do
-	(loop for eps-start from 0 to q do
-	(setf y 0)
-	(setf eps eps-start)
-	(loop for x from 1 to distance do 
-		(setf eps (+ eps p))
-		(when (>= eps q)
-			(setf eps (- eps q))
-			(if (find direction (list 2 3 6 7)) (setf y (- y 1)) (setf y (+ y 1)))
-			)
+	;for each direction we can trace a digital line in
+	(loop for direction from 0 to 7 
+		;for each possible slope (p/q)
+		do (loop for q from 0 to distance
+			do (loop for p from 0 to q
+				;for each possible starting offset
+				do (loop for eps-start from 0 to q 
+					;y keeps track of how high our 
+					;digital line goes on that axis
+					do (setf y 0)
+					;set our temporary eps value 
+					;(we'll be incrementing that within the loop)
+					(setf eps eps-start)
+					;progressing forwards along the line
+					(loop for x from 1 to distance
+						;update our eps
+						do (setf eps (+ eps p))
+						;if it's greater than our rise, adjust y,
+						;and readjust our eps's value
+						(when (>= eps q)
+							(setf eps (- eps q))
+							;if we're going in direction 2, 3, 6, or 7, decrement y
+							(if (find direction (list 2 3 6 7)) 
+								(setf y (- y 1))
+								;otherwise, increment it
+								(setf y (+ y 1))))
 
-		(if (< direction 4)
-			(setf tile (elt (elt *map* (+ (slot-value character 'y-pos) y)) (+ (slot-value character 'x-pos) (if (oddp direction) (* x -1) x))))
-			(setf tile (elt (elt *map* (+ (slot-value character 'y-pos) (if (oddp direction) (* x -1) x))) (+ (slot-value character 'x-pos) y)))
-			)
-		(when (not (find tile (slot-value character 'line-of-sight)))
-			(push tile (slot-value character 'line-of-sight))
-			(nreverse (slot-value character 'line-of-sight))
-			(when (eq character *player*) 
-				(setf (slot-value tile 'visible) t)
-				(setf (slot-value tile 'explored) t)
-				)
-			(if (eq (slot-value tile 'character) *player*) (setf (slot-value character 'can-see-player) t))
-		)
-			
+						;for half of the directions we go in, we're drawing lines vertically as opposed to horizontally
+						;(we're drawing them along the y axis instead of the x axis, 
+						;so we add the x value to the y-pos on the map and vice versa)
+						(if (< direction 4)
+							;set a shorthand for the tile we're actually on
+							;by setting our 'tile' variable to the tile we find
+							;once we translate our coordinates along the digital line we're drawing
+							;to actual coordinates on the map
+							(setf tile 
+								;find the actual tile we're currently on
+								(elt (elt *map* (+ (slot-value character 'y-pos) y))
+									(+ (slot-value character 'x-pos) 
+								;if we're going in an odd direction, we're headed in the 
+								;opposite direction along the axis we're traveling across, so we invert x
+										(if (oddp direction) 
+											(* x -1)
+											;otherwise x is unmodified 
+											x))))
+							;if our direction is greater than four, we just swap our y coordinate with our x coordinate
+							(setf tile
+								;find the tile on the map 
+								(elt (elt *map* (+ (slot-value character 'y-pos) 
+									;if our direction is odd, invert x
+									(if (oddp direction) 
+										(* x -1)
+										x))) 
+									(+ (slot-value character 'x-pos) y))))
 
-		(if (char= (slot-value tile 'symbol) #\#) (return))
-		)))))
-	)
+						;disabled code
+						;(when (not (find tile (slot-value character 'line-of-sight)))
+							;(push tile (slot-value character 'line-of-sight))
+							;(nreverse (slot-value character 'line-of-sight))
+
+							;if we're the player, we can see the tile we're currently on
+							(when (eq character *player*) 
+								(setf (slot-value tile 'visible) t)
+								;once we've seen it once, we remember it
+								(setf (slot-value tile 'explored) t))
+							
+							;if we're the monster, and the tile we're looking at has the player in it,
+							;note that we can see the player
+							(if (eq (slot-value tile 'character) *player*) 
+								(setf (slot-value character 'can-see-player) t));)
+						;if the tile we're currently on is a wall, we don't walk along this line any further
+						(if (char= (slot-value tile 'symbol) #\#) (return))))))))
