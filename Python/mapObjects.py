@@ -227,6 +227,15 @@ class Level:
 					#Append this tile to the row.
 					tileRow.append(newTile)
 
+				#A flask
+				elif space == "&":
+					#Create our new tile
+					newTile = Tile(Floor, y, x)
+					#Put a potion on it
+					newTile.contents.append(items.Flask())
+					#Append this tile to the row.
+					tileRow.append(newTile)
+
 				else:
 					#if the character is unrecognized,
 					#initialize an empty tile 

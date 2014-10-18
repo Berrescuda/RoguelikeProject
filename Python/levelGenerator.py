@@ -438,6 +438,9 @@ def generateLevel(mapWidth, mapHeight, start):
 		#one in seven chance of a potion being put in the room.
 		if randint(1, 7) == 7:
 			room.placeInRoom("%", levelMap)
+		#one in 10 chance of a flask being put in the room
+		if randint(1,10) == 10:
+			room.placeInRoom("&", levelMap)
 			
 	#return the completed string
 	return levelMapToString(levelMap)
