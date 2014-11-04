@@ -262,7 +262,7 @@ class Monster (Character):
 	#to get it to a target destination
 	path = []
 
-	#This will be my attempted implementation of the pathfinding
+	#This is my implementation of the pathfinding
 	#algorithm detailed at: 
 	#http://www.roguebasin.com/index.php?title=Quick_Pathfinding_in_a_Dungeon
 	#Find path should take a target tile,
