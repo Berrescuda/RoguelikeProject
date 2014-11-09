@@ -32,3 +32,20 @@ class Potion(Item):
 			character.currentHp = character.maxHp
 		#Use up the potion
 		character.inventory.remove(self)
+
+class Flask(Item):
+	#change the name
+	name = "flask"
+	#change the symbol
+	symbol = "&"
+	#The drink function uses the flask and increases the user's magicpoints
+	#Parameters:	character using the potion
+	#Returns:		Nothing
+	def drink(self, character):
+		#Boost the current magicpoints
+		character.currentMp += 5
+		#Make sure the currentMp doesnt exceed the cap
+		if character.currentMp > character.maxMp:
+			character.currentMp = character.maxMp
+		#Use up the potion
+		character.inventory.remove(self)
